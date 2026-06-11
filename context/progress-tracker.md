@@ -12,8 +12,8 @@ immediately know what is done, what is in progress, and what is next.
 ## Current Status
 
 **Phase:** Phase 1 — Foundation & Shell
-**Last completed:** 01 Project scaffold
-**Next:** 02 App shell layout
+**Last completed:** 02 App shell layout
+**Next:** 03 Supabase clients & middleware
 
 ---
 
@@ -21,7 +21,7 @@ immediately know what is done, what is in progress, and what is next.
 
 ### Phase 1 — Foundation & Shell
 - [x] 01 Project scaffold
-- [ ] 02 App shell layout
+- [x] 02 App shell layout
 - [ ] 03 Supabase clients & middleware
 
 ### Phase 2 — Authentication
@@ -78,4 +78,5 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Notes
 
-_None yet._
+- **02 — Separate `<Sidebar>` and `<BottomNav>` components.** Chose distinct components over a single responsive variant component — cleaner separation of concerns, easier to extend per-layout if needed. Icon rail at `md` uses `md:block lg:hidden` to show a music note (♫), full text labels at `lg`+.
+- **02 — Song type created early.** `src/types/index.ts` defines `Song` and `ActionResult<T>` now; Supabase types (Feature 06) will replace it without refactoring the grid/card components.

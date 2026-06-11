@@ -1,1 +1,55 @@
 @import "tailwindcss";
+
+@theme {
+  /* Fonts */
+  --font-sans: "Figtree", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  /* Surfaces — near-black, depth via shade */
+  --color-base: #121212;        /* page background        */
+  --color-surface: #181818;     /* cards, sidebar, player  */
+  --color-surface-2: #1f1f1f;   /* buttons, inputs         */
+  --color-card: #252525;        /* elevated card           */
+  --color-card-2: #272727;      /* alternate card          */
+
+  /* Brand accent — functional only (play / active / CTA) */
+  --color-accent: #1ed760;
+  --color-accent-border: #1db954;
+
+  /* Text */
+  --color-text: #ffffff;        /* primary                 */
+  --color-muted: #b3b3b3;       /* secondary / inactive nav / dividers */
+  --color-subtle: #cbcbcb;      /* brighter secondary      */
+  --color-bright: #fdfdfd;      /* max emphasis            */
+
+  /* Borders */
+  --color-border: #4d4d4d;
+  --color-border-light: #7c7c7c;
+
+  /* Semantic */
+  --color-negative: #f3727f;
+  --color-warning: #ffa42b;
+  --color-announcement: #539df5;
+
+  /* Radii — pill + circle geometry (rounded-full covers 9999px & 50%) */
+  --radius-pill: 500px;
+
+  /* Shadows — heavy, for elevation on dark */
+  --shadow-card: 0 8px 8px rgb(0 0 0 / 0.3);
+  --shadow-dialog: 0 8px 24px rgb(0 0 0 / 0.5);
+  --shadow-inset-border: 0 1px 0 #121212, inset 0 0 0 1px #7c7c7c;
+
+  /* Breakpoints — overrides Tailwind defaults to match the device targets */
+  --breakpoint-xs: 425px;   /* large phones                              */
+  --breakpoint-sm: 576px;   /* small tablets · 2-col grid                 */
+  --breakpoint-md: 768px;   /* iPad portrait · 3-col grid                 */
+  --breakpoint-lg: 1024px;  /* iPad landscape / desktop · sidebar · 4-col */
+  --breakpoint-xl: 1280px;  /* large desktop · 5-col                      */
+
+  /* Extra type size (24/20/18/16/14/12px already map to Tailwind defaults) */
+  --text-2xs: 0.625rem;     /* 10px — micro */
+}
+
+body {
+  @apply bg-base text-text;
+  font-family: var(--font-sans);
+}

@@ -1,65 +1,47 @@
-# Memory — Feature 01: Project Scaffold
+# Memory — Feature 02: App Shell Layout
 
 Last updated: 2026-06-11
 
 ## What was built
 
-Feature **01 Project scaffold** (Phase 1) — complete and verified. Stood up the
-runnable Next.js app from an empty repo:
+Feature **02 App shell layout** (Phase 1) — complete and verified. Established the visual foundation with responsive shell, design tokens, font, and mock-data grid:
 
-- `create-next-app` baseline merged into the repo root (scaffolded in a temp dir
-  via rsync to avoid clobbering `CLAUDE.md`/`context/`/`LICENSE`/`README.md`).
-- **Next.js 16.2.9 + React 19.2.4 + TypeScript (strict) + Tailwind v4**, App
-  Router, `src/` dir, `@/*` alias, ESLint flat config.
-- All approved deps installed (supabase-js, ssr, react-query, zustand, use-sound,
-  radix dialog+slider, react-hook-form, react-icons, sonner, clsx, tailwind-merge,
-  uuid, @types/uuid).
-- `src/` skeleton created empty with `.gitkeep`: `components hooks stores server
-  actions lib providers types` (+ `app`).
-- Blank page only: `src/app/globals.css` = just `@import "tailwindcss"`; minimal
-  `page.tsx` (renders "SpotifyAgain") + `layout.tsx`; demo SVGs removed.
-- `next.config.ts` sets `turbopack.root = import.meta.dirname`.
-- `package.json` name = `spotifyagain`.
+- **`src/app/globals.css`** — full `@theme` block (colors, breakpoints, radii, shadows) + body base styles
+- **`src/lib/utils.ts`** — `cn()` helper (clsx + tailwind-merge)
+- **`src/lib/constants.ts`** — `STORAGE_BUCKETS`, `ACCEPTED_AUDIO_TYPES`, `ACCEPTED_IMAGE_TYPES`
+- **`src/types/index.ts`** — `Song` type (8 fields) + `ActionResult<T>` union
+- **`src/app/layout.tsx`** — Figtree font, root shell: Sidebar + main + PlayerBar + BottomNav
+- **`src/components/Sidebar.tsx`** — responsive sidebar: full at `lg`+, icon rail at `md`, hidden below
+- **`src/components/BottomNav.tsx`** — fixed nav visible only below `md`, hidden at md+
+- **`src/components/player/PlayerBar.tsx`** — fixed full-width bar (h-24), 3 layout zones (cover/title, controls, volume)
+- **`src/components/SongCard.tsx`** — song card component (cover placeholder, title, author, hover state)
+- **`src/app/(site)/page.tsx`** — Home Server Component with 6 mock songs, responsive grid (1→2→3→4→5 cols)
 
 ## Decisions made
 
-(Full list lives in `context/progress-tracker.md` → Decisions. Key ones:)
-
-- **Adopted Next.js 16, not the originally-documented 15** — `create-next-app@latest`
-  ships 16.2.9. Updated all version refs (architecture, code-standards,
-  library-docs, build-plan, CLAUDE.md) 15→16. Async `cookies()`/`params`,
-  middleware, and Server Action patterns are unchanged in 16, so no other guidance moved.
-- Installed **all** approved deps up front (per build-plan §01), not lazily.
-- Kept 01 a true blank page — tokens/Figtree/dark theme/shell deferred to **02**.
-- No `tailwind.config.ts` (Tailwind v4 is CSS-driven).
+- **Separate `<Sidebar>` and `<BottomNav>` components** — not a single responsive variant. Clearer boundaries, easier to maintain/extend.
+- **Song type created now** — matches schema from `architecture.md`; Feature 06 (Supabase) replaces with generated types, no refactor needed.
+- **Styled player bar shell** — correct height, zones, placeholder content; Feature 09 drops audio logic in without restyling.
+- **Grid responsive fully wired** — `grid-cols-1 xs:grid-cols-2 sm:grid-cols--2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5` all in place at build time.
 
 ## Problems solved
 
-- `create-next-app .` refuses to run in a non-empty root → scaffolded in `/tmp`
-  then rsync-merged with excludes, preserving existing docs.
-- Next/Turbopack inferred the **wrong workspace root** from a stray
-  `~/package-lock.json` → fixed by pinning `turbopack.root` in `next.config.ts`.
-- Benign `DEP0205` ("module.register() deprecated") warning on Node 26 is from a
-  toolchain loader hook, not our code — safe to ignore.
+- None this session — Feature 02 built without friction.
 
 ## Current state
 
-- `npm run lint` ✅ clean · `npm run build` ✅ (no warnings, `/` static) ·
-  `npm run dev` ✅ serves 200 at localhost:3000.
-- Nothing committed yet — working tree has the full scaffold + doc edits unstaged.
-- No Supabase clients, middleware, env files, auth, or UI shell yet (later features).
+- ✅ App compiles and runs (`npm run dev` at localhost:3000)
+- ✅ Shell renders with all components (Sidebar, BottomNav, PlayerBar, Home grid)
+- ✅ Responsive layout verified: sidebar full→rail→hidden, nav shows only below md, grid columns correct at every breakpoint
+- ✅ Design tokens applied: dark background (`#121212`), white text, Spotify Green accents (`#1ed760`), all colors in use
+- ✅ Figtree font loaded and applied via `next/font/google`
+- ✅ Lint clean, build succeeds
+- ✅ progress-tracker.md updated: Feature 02 ✅, Next: Feature 03
 
 ## Next session starts with
 
-**Feature 02 — App shell layout.** Build the persistent Sidebar + main + fixed
-bottom player slot with mock data, wire the `@theme` design tokens + breakpoints
-into `globals.css` (canonical block in `architecture.md` → Key Patterns), load
-**Figtree** via `next/font/google`, and stub Home with a mock song grid (1→2→3→4→5
-cols across sm/md/lg/xl). Verify responsively at ~375 / 768 / 1024 / 1440px.
-Follow `DESIGN-spotify.md` for every visual choice.
+**Feature 03 — Supabase clients & middleware.** Wire Supabase clients (`src/lib/supabase/{client,server,middleware}.ts`), root `middleware.ts` (session refresh), `.env.local` keys, and `next.config.ts` image patterns. No UI/auth behavior yet — just plumbing so Features 04+ can use Supabase. Verify a Server Component constructs the server client without error, signed in or anonymous.
 
 ## Open questions
 
-- None blocking. Optional: whether to `git commit` feature 01 before starting 02
-  (user has not asked to commit yet). Per global rule, **never add a co-author**
-  to commits.
+- None blocking.
