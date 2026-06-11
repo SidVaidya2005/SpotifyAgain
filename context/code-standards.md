@@ -36,11 +36,11 @@ The AI agent on this project operates as a senior engineer. This means:
 
 ---
 
-## Next.js 15 (App Router) Conventions
+## Next.js 16 (App Router) Conventions
 
 - **Server Components by default.** Add `'use client'` only when a component needs state, effects, browser APIs, or event handlers.
 - Initial data reads happen in Server Components via `src/server/*`; never fetch initial page data in a `useEffect`.
-- `cookies()`, `headers()`, and route `params`/`searchParams` are **async in Next 15** — always `await` them.
+- `cookies()`, `headers()`, and route `params`/`searchParams` are **async in Next 16** — always `await` them.
 - All mutations are Server Actions in `src/actions/` (`'use server'`) or explicit React Query mutations; after a server write, call `revalidatePath()` or invalidate the relevant React Query key.
 - Business logic and DB access never live in components — they live in `src/server/` (reads) and `src/actions/` (writes).
 - **Browsing and playback are public — do not gate the whole app.** Enforce auth only in (a) Server Actions (return `{ error }` when `getUser()` is null) and (b) personal-page Server Components (`/liked`, `/library`, `/playlist/[id]`), which redirect to `/` when there is no user. Home and Search stay open to anonymous visitors.

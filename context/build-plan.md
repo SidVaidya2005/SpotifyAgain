@@ -21,7 +21,7 @@ numbered feature fully before starting the next.
 
 ### 01 Project scaffold
 
-Stand up the Next.js 15 + TypeScript + Tailwind v4 project with the approved
+Stand up the Next.js 16 + TypeScript + Tailwind v4 project with the approved
 dependencies and the folder structure from `architecture.md`.
 
 **Logic:**

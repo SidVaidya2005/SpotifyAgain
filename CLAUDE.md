@@ -38,5 +38,5 @@ Targets **Render** for deployment as a Node Web Service (build `npm install && n
 
 ## Tooling (MCP)
 
-- **Context7** (`plugin:context7:context7`) — live, version-specific library docs. Resolve the library id, then query its docs (tool names vary by client: `resolve-library-id`/`query-docs` or `resolve_library_id`/`query_docs`) before writing code against Next.js 15, Tailwind v4, `@supabase/ssr`, React Query v5, and any other library whose API you're unsure of.
+- **Context7** (`plugin:context7:context7`) — live, version-specific library docs. Resolve the library id, then query its docs (tool names vary by client: `resolve-library-id`/`query-docs` or `resolve_library_id`/`query_docs`) before writing code against Next.js 16, Tailwind v4, `@supabase/ssr`, React Query v5, and any other library whose API you're unsure of.
 - **Supabase** (`plugin:supabase:supabase`) — project database/schema/RLS operations and Supabase-specific guidance (authenticate once before use).

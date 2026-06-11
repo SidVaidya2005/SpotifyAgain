@@ -17,7 +17,7 @@ a feature that touches one of these libraries.
 
 Before implementing any feature that uses a third party library:
 
-1. **Pull live docs from the Context7 MCP first.** It is installed and connected (`plugin:context7:context7`). Use its two tools (exact names vary by client — `resolve-library-id`/`query-docs` or `resolve_library_id`/`query_docs`): first **resolve the library id** from the package name to a Context7 ID — e.g. `/supabase/ssr`, `/vercel/next.js`, `/tailwindlabs/tailwindcss` — then **query its docs** with that id and a specific natural-language question (e.g. "createServerClient cookies in Next.js 15", "@theme tokens in v4", "signInWithOAuth google redirect"). Pin a version by appending it to the id (`/org/project/version`) when it matters. This is the first stop for any API you are unsure about — Tailwind v4 `@theme`, `@supabase/ssr`, Next.js 15 async APIs, and React Query v5 all changed recently and training knowledge may be stale.
+1. **Pull live docs from the Context7 MCP first.** It is installed and connected (`plugin:context7:context7`). Use its two tools (exact names vary by client — `resolve-library-id`/`query-docs` or `resolve_library_id`/`query_docs`): first **resolve the library id** from the package name to a Context7 ID — e.g. `/supabase/ssr`, `/vercel/next.js`, `/tailwindlabs/tailwindcss` — then **query its docs** with that id and a specific natural-language question (e.g. "createServerClient cookies in Next.js 16", "@theme tokens in v4", "signInWithOAuth google redirect"). Pin a version by appending it to the id (`/org/project/version`) when it matters. This is the first stop for any API you are unsure about — Tailwind v4 `@theme`, `@supabase/ssr`, Next.js 16 async APIs, and React Query v5 all changed recently and training knowledge may be stale.
 2. **Use the Supabase MCP** (`plugin:supabase:supabase`, configured — authenticate once) for project-specific database, schema, and RLS questions.
 3. **Check `CLAUDE.md`** at the project root (the agent entry point for this repo) and any installed skills for codebase-specific patterns.
 4. **Read this file** for project-specific patterns that override general library knowledge.
@@ -402,9 +402,9 @@ export function UploadForm({ onSubmit }: { onSubmit: (v: UploadValues) => Promis
 
 ---
 
-## Next.js 15 (App Router)
+## Next.js 16 (App Router)
 
-**Check first:** Context7 `/vercel/next.js` for async `cookies()`/`params`, Server Actions, and caching — these changed in 15.
+**Check first:** Context7 `/vercel/next.js` for async `cookies()`/`params`, Server Actions, and caching — these are async in Next 16.
 
 This project's framework conventions (Server Components by default, async dynamic
 APIs, Server Actions for writes, `<Image>` for art) live in `code-standards.md` →

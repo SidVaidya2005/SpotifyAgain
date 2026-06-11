@@ -12,15 +12,15 @@ immediately know what is done, what is in progress, and what is next.
 ## Current Status
 
 **Phase:** Phase 1 — Foundation & Shell
-**Last completed:** Nothing yet — build not started
-**Next:** 01 Project scaffold
+**Last completed:** 01 Project scaffold
+**Next:** 02 App shell layout
 
 ---
 
 ## Progress
 
 ### Phase 1 — Foundation & Shell
-- [ ] 01 Project scaffold
+- [x] 01 Project scaffold
 - [ ] 02 App shell layout
 - [ ] 03 Supabase clients & middleware
 
@@ -55,7 +55,24 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Decisions Made During Build
 
-_None yet._
+- **01 — Next.js 16, not 15.** `create-next-app@latest` now ships Next.js
+  **16.2.9** (with React 19.2.4, Tailwind v4). Chose to adopt 16 rather than pin
+  to the originally-documented 15; the context docs (`architecture.md`,
+  `code-standards.md`, `library-docs.md`, `build-plan.md`, `CLAUDE.md`) were
+  updated to say 16. The async `cookies()`/`params`, middleware, and Server
+  Action patterns those docs rely on are unchanged in 16, so no other guidance moved.
+- **01 — Scaffolded via temp dir + merge.** Repo root was non-empty (`CLAUDE.md`,
+  `context/`), so `create-next-app .` won't run; scaffolded in a temp dir and
+  rsync-merged in, preserving the existing `CLAUDE.md`/`context/`/`LICENSE`/`README.md`.
+- **01 — Installed all approved deps up front** (per build-plan §01), not lazily.
+- **01 — Kept feature 01 a blank page.** `globals.css` is just
+  `@import "tailwindcss"`; design tokens, Figtree, dark theme, and the shell are
+  deferred to feature 02, per the build-plan split.
+- **01 — Pinned `turbopack.root`** in `next.config.ts` to this project. A stray
+  `package-lock.json` in the home dir made Next/Turbopack infer the wrong
+  workspace root; pinning silences the warning and keeps file tracing/env
+  resolution correct (locally and on Render).
+- **01 — No `tailwind.config.ts`.** Tailwind v4 is CSS-driven; none created.
 
 ---
 

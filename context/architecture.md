@@ -9,7 +9,7 @@
 | Layer | Tool | Purpose |
 | ----- | ---- | ------- |
 | Language | TypeScript (strict) | All app and server code |
-| Framework | Next.js 15 (App Router) + React 19 | Routing, Server Components, Server Actions, Route Handlers |
+| Framework | Next.js 16 (App Router) + React 19 | Routing, Server Components, Server Actions, Route Handlers |
 | Styling | Tailwind CSS v4 | Utility-first styling via `@import "tailwindcss"` |
 | Fonts | Figtree via `next/font/google` | Free geometric sans closest to Spotify's Circular; see `DESIGN-spotify.md` |
 | UI primitives | Radix UI (`react-dialog`, `react-slider`) | Accessible modal + slider primitives |
