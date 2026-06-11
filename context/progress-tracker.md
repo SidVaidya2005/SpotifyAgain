@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 1 — Foundation & Shell → done; entering Phase 2 — Authentication
-**Last completed:** 03 Supabase clients & middleware
-**Next:** 04 Google sign-in
+**Phase:** Phase 2 — Authentication (in progress)
+**Last completed:** 04 Google sign-in (built + verified end-to-end; live OAuth round-trip working)
+**Next:** 05 Action gating, profiles & sign-out
 
 ---
 
@@ -25,7 +25,7 @@ immediately know what is done, what is in progress, and what is next.
 - [x] 03 Supabase clients & middleware
 
 ### Phase 2 — Authentication
-- [ ] 04 Google sign-in
+- [x] 04 Google sign-in
 - [ ] 05 Action gating, profiles & sign-out
 
 ### Phase 3 — Songs & Upload
@@ -121,3 +121,38 @@ immediately know what is done, what is in progress, and what is next.
   clean; `/library` & `/liked` → 307 → `/`; a non-protected path 404s without
   redirect; a temporary Server Component confirmed the server client constructs and
   `getUser()` resolves cleanly, then was removed. No UI/providers added (those are 04+).
+- **04 — Built option-b** (full flow + UI now; Supabase dashboard configured
+  separately, live round-trip tested after). New: `use-auth-modal` store; `Button`
+  primitive (`pill`/`white`/`outline`); reusable `Modal` Radix-Dialog shell;
+  `modals/AuthModal` ("Continue with Google" → `signInWithOAuth`); `UserProvider` +
+  `hooks/useUser`; `ModalProvider`; `ToasterProvider`; `Header`; `auth/callback/route.ts`.
+  `layout.tsx` is now an **async server component** that reads `getUser()` and seeds
+  `UserProvider` (no logged-out→logged-in flicker); Header sits in a new content
+  column above `<main>`.
+- **04 — Auth surface = top `Header`, not the sidebar.** Real triggers (upload/like/
+  playlist) don't exist yet, so a "Log in" pill in a new Header is the visible entry
+  point at all breakpoints; signed-in state shows a minimal initial-circle only
+  (avatar + sign-out menu is **05**). Wordmark shown in Header only below `md` (sidebar
+  carries it ≥`md`).
+- **04 — `useUser` is client context, server-seeded.** `UserProvider` seeds from the
+  layout's `getUser()` and stays live via `onAuthStateChange`; `useUser` just reads the
+  context (throws outside the provider). Stores still never call Supabase.
+- **04 — `ReactQueryProvider` deferred to Feature 11** (likes); 04 doesn't use it.
+  Only `UserProvider`/`ModalProvider`/`ToasterProvider` mounted now.
+- **04 — Dropped the modal "mounted-guard".** New React 19 lint rule
+  (`react-hooks/set-state-in-effect`) forbids `setState` synchronously in an effect, so
+  the classic `useState(false)`+`useEffect(setIsMounted(true))` guard now errors. It's
+  unnecessary anyway: each modal's `open` starts `false` on server and client (Radix
+  portals content only when open) → no hydration mismatch. `ModalProvider` just renders
+  `<AuthModal />`.
+- **04 — `text-black` is the play/CTA-icon black** (built-in Tailwind `#000`); do NOT use
+  `text-base` (that's a font-size util colliding with `--color-base`, per the 02 note).
+- **04 — Verified (headless):** lint + `next build` green; build still prints
+  `ƒ Proxy (Middleware)`; `/` now `ƒ (Dynamic)`. Dev: anon `/` → 200 with the **Log in**
+  button present in SSR HTML (server-seed, no flicker); `/auth/callback` (no code) →
+  307 → `/`; `/library` (anon) → 307 → `/`; clean dev log.
+- **04 — Live OAuth round-trip verified.** Google provider enabled in Supabase Auth,
+  `http://localhost:3000/auth/callback` allowlisted, Supabase callback added to the
+  Google Cloud OAuth client. Modal → Google consent → `/auth/callback` → back to `next`
+  works; Header shows the signed-in initial-circle. (Dashboard/Google Cloud config is
+  external, not in the repo — must be repeated for the Render URL at deploy, Feature 16.)

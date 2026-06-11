@@ -1,87 +1,57 @@
-# Memory — Feature 03 Supabase clients & middleware
+# Memory — Feature 04 Google sign-in
 
 Last updated: 2026-06-12
 
 ## What was built
 
-Feature 03 (Phase 1) — Supabase wired in, no UI change. All changes are
-**uncommitted** on `main` (working tree). New files:
+Feature 04 (Phase 2) — Google OAuth sign-in, **built end-to-end and verified
+including a live round-trip**. All changes are **uncommitted** on `main`.
 
-- `src/lib/supabase/client.ts` — browser client (`createBrowserClient`).
-- `src/lib/supabase/server.ts` — server client; async `cookies()`, `getAll`/`setAll`,
-  `setAll` try/caught for Server-Component calls.
-- `src/lib/supabase/middleware.ts` — `updateSession(request)` helper: refreshes
-  session, redirects to `/` when no user AND path starts with `/library`|`/liked`|`/playlist`.
-- `src/proxy.ts` — Next 16 request entry (`export async function proxy`) calling
-  `updateSession`; `config.matcher` excludes `_next/*` + static assets.
-- `.env.local` (gitignored) — real project URL + anon key (publishable key).
-- `.env.example` (committed; un-ignored via `!.env.example` in `.gitignore`).
+New files:
+- `src/stores/use-auth-modal.ts` — `{ isOpen, onOpen, onClose }` (minimal; carries no `next`).
+- `src/components/Button.tsx` — pill primitive, `variant="pill"`(green accent CTA) / `white`(OAuth) / `outline`. Uses `cn()`.
+- `src/components/Modal.tsx` — reusable Radix `Dialog` shell (Overlay+Content+Title+Description+Close X). Upload/Playlist modals (07/13) will reuse it.
+- `src/components/modals/AuthModal.tsx` — "Continue with Google" (`FcGoogle`) → `signInWithOAuth({ provider:'google', options:{ redirectTo: \`${NEXT_PUBLIC_SITE_URL}/auth/callback?next=${encodeURIComponent(pathname)}\` } })`; error → `toast.error`.
+- `src/providers/UserProvider.tsx` — exports `UserContext` + `UserProvider({ initialUser })`; `useState(initialUser)` + `onAuthStateChange` (unsub on cleanup).
+- `src/hooks/useUser.ts` — reads `UserContext`, throws outside provider, returns `{ user }`.
+- `src/providers/ModalProvider.tsx` — renders `<AuthModal/>` (NO mounted-guard, see Problems).
+- `src/providers/ToasterProvider.tsx` — sonner `<Toaster theme="dark" position="bottom-center" />`.
+- `src/components/Header.tsx` — top bar: anon → "Log in" pill (opens AuthModal); signed-in → minimal initial-circle indicator. Wordmark shown only `<md`.
+- `src/app/auth/callback/route.ts` — `exchangeCodeForSession(code)` → redirect to validated same-origin `next` (success) or `/` (no code / error). No profile write.
 
-Modified: `next.config.ts` (added `images.remotePatterns` for
-`vgsiwqrovctitxkruwpj.supabase.co` → `/storage/v1/object/public/**`; kept
-`turbopack.root`); `.gitignore`; context docs `architecture.md`,
-`library-docs.md`, `build-plan.md`, `progress-tracker.md` (03 checked off,
-decisions logged). Supabase project ref: **vgsiwqrovctitxkruwpj**.
+Modified:
+- `src/app/layout.tsx` — now **async server component**: reads `getUser()`, wraps body in `<UserProvider initialUser={user}>`, renders `<ToasterProvider/>`+`<ModalProvider/>`, inserts `<Header/>` in a new content column above `<main>` (`<div className="flex flex-1 flex-col overflow-hidden"><Header/><main…/></div>`). Sidebar/PlayerBar/BottomNav positions unchanged.
+- `context/progress-tracker.md` — 04 checked off, status + decisions logged.
 
-Approved plan: `/Users/siddarthvaidya/.claude/plans/03-supabase-clients-hashed-acorn.md`.
+Approved plan: `/Users/siddarthvaidya/.claude/plans/eager-wishing-cray.md`.
 
 ## Decisions made
 
-- **Root entry is `proxy.ts`, not `middleware.ts`** (architect-session decision).
-  Next 16 deprecated `middleware.ts`/`export middleware` → `proxy.ts`/`export proxy`
-  (nodejs runtime, no edge). `16.2.9` carries both `MIDDLEWARE_FILENAME` and
-  `PROXY_FILENAME` constants; `middleware.ts` still works but warns. Context docs
-  were updated to say `proxy.ts`.
-- **`proxy.ts` MUST live in `src/`** (not repo root) because the app is in `src/`.
-  Root-level proxy is silently ignored. The `src/lib/supabase/middleware.ts` helper
-  keeps its name (it's an internal lib file, not the entry).
-- **Real Supabase creds now** (not placeholders) — enables real `getUser()`
-  verification and unblocks Feature 04.
-- **Committed `.env.example`** as the key template for reviewers; `images.remotePatterns`
-  pinned to the specific project host (not a wildcard).
-- The `src/lib/supabase/middleware.ts` `updateSession` body and the client/server
-  bodies are verbatim from `architecture.md` → Key Patterns (Context7 confirmed the
-  `getAll`/`setAll` cookie API is current for `@supabase/ssr@0.12`).
+- **Auth surface = new top `Header`** (chosen over sidebar/bottom-nav buttons). Real triggers (upload/like/playlist) don't exist yet, so a "Log in" pill in the Header is the entry point at all breakpoints. 05 evolves the signed-in state into sidebar avatar + sign-out.
+- **`useUser` is client context, server-seeded** (chosen over client-only fetch) → no logged-out→logged-in flicker. `layout.tsx` reads `getUser()` and passes `initialUser`; `onAuthStateChange` keeps it live.
+- **`ReactQueryProvider` deferred to Feature 11** (likes); not mounted yet. Only User/Modal/Toaster providers now.
+- **Introduced `Button` + `Modal` primitives now** per code-standards (first reusable buttons/modal). `AuthModal`'s Google button uses `variant="white"`.
+- **Signed-in indicator in 04 is minimal** (initial-circle, not the Google avatar image — its host isn't in `next.config` `remotePatterns`; 05 handles the real avatar). No sign-out control in 04 (that's 05).
+- **option-b workflow:** code built first, then user enabled Google provider + allowlisted redirect in the dashboards, then live test. Dashboard/Google-Cloud config is **external (not in repo)** — must be repeated for the Render URL at deploy (Feature 16).
 
 ## Problems solved
 
-- **Root `proxy.ts` was silently ignored** — empty `middleware-manifest.json`, no
-  `Proxy` line in build output. Fix: move to `src/proxy.ts`. Verification signal:
-  `npm run build` prints `ƒ Proxy (Middleware)` ONLY when it's in `src/`.
-- **App Router private-folder gotcha** — a temp verify page at `(site)/__verify/`
-  404'd because folders prefixed with `_` are private (excluded from routing).
-  Renamed to `verify-scratch` to make it routable (then deleted it).
-- **`getUser()` for anonymous returns `{ user: null, error: "Auth session missing!" }`**
-  — this is the EXPECTED no-session state, not a failure. Gate on `!user`; ignore
-  that error, never surface it.
+- **Modal "mounted-guard" now fails lint.** The classic `useState(false)` + `useEffect(() => setIsMounted(true))` pattern errors under React 19's `react-hooks/set-state-in-effect` ("setState synchronously within an effect"). It's unnecessary anyway — a modal's `open` starts `false` on server and client (Radix portals content only when open) → no hydration mismatch. `ModalProvider` just renders `<AuthModal/>`. **Don't reintroduce the guard in future modals.**
+- **`text-black` vs `text-base`** (carried from 02): use built-in `text-black` (#000) for the play/CTA icon black; `text-base` is a font-size util that collides with `--color-base`.
 
 ## Current state
 
-- **Feature 03 done and verified.** `npm run lint` clean; `npm run build` green
-  (no deprecation warning; `ƒ Proxy (Middleware)` wired). Dev run: `/` → 200 for
-  anon with proxy running + `getUser()`→null clean; `/library` & `/liked` → 307→`/`;
-  non-protected path 404s without redirect; server client constructs fine in a
-  Server Component (temp page, since removed).
-- `progress-tracker.md`: Phase 1 complete; Last completed = **03**, Next = **04**.
-- **All changes uncommitted.** No providers/UI added yet (correct — that's 04+).
+- **Feature 04 done + verified end-to-end.** `npm run lint` clean; `npm run build` green (still prints `ƒ Proxy (Middleware)`; `/` now `ƒ (Dynamic)` because layout reads `getUser()`). Headless: anon `/` → 200 with "Log in" in SSR HTML (no flicker); `/auth/callback` (no code) → 307 → `/`; `/library` (anon) → 307 → `/`; clean dev log.
+- **Live OAuth round-trip CONFIRMED WORKING by the user** after they: enabled Google in Supabase Auth → Providers, allowlisted `http://localhost:3000/auth/callback`, added the Supabase callback to the Google Cloud OAuth client. Modal → Google → callback → `next` works; Header shows the initial-circle.
+- **Run on port 3000** for OAuth (`NEXT_PUBLIC_SITE_URL=http://localhost:3000`). Re-test sign-out by clearing the session cookie (no sign-out UI until 05).
+- **All Feature-04 changes uncommitted.** Supabase project ref: **vgsiwqrovctitxkruwpj**.
 
 ## Next session starts with
 
-1. **Decide: commit Feature 03 first?** User was asked at end of session and hadn't
-   answered. If committing, **never add a co-author** (global CLAUDE.md rule).
-2. Then **04 — Google sign-in** (Phase 2). Per CLAUDE.md read `context/` first; pull
-   `@supabase/ssr` `signInWithOAuth` (google) + Next.js 16 Route Handler docs from
-   Context7. Scope: `AuthModal` (Radix Dialog) + `use-auth-modal` store +
-   "Continue with Google" → `signInWithOAuth({ provider:'google', redirectTo:
-   '<site>/auth/callback?next=<path>' })`; `src/app/auth/callback/route.ts`
-   exchanges code → redirects to validated same-origin `next`; `UserProvider`/`useUser`.
-   Note: profiles table + `handle_new_user` trigger is Feature 05/06, NOT 04.
+1. **Commit decision (UNANSWERED).** Proposed message following the repo convention (`1.3-supabase-client-middleware-setup` = phase1/feat3): **`2.1-google-signin`** (phase2/feat1). **Never add a co-author** (global CLAUDE.md). User previously committed features himself — confirm whether to commit or he will.
+2. Then **05 — Action gating, profiles & sign-out** (Phase 2). Per CLAUDE.md read `context/` first. Scope: `profiles` table + RLS + `handle_new_user` trigger on `auth.users` (inserts profile w/ full_name/avatar_url from Google metadata — no client write) via a `supabase/migrations/` SQL file; personal-page Server Components redirect to `/` when no user (proxy already gates routes from 03); **sidebar avatar + working sign-out** (`supabase.auth.signOut()` → redirect home) — this replaces/augments the Header's minimal initial-circle. Pull Supabase MCP / Context7 for the trigger + RLS. Note: full `songs`/`playlists`/etc. schema is Feature 06.
 
 ## Open questions
 
-- Commit 03 now or roll it into a later commit? (unanswered)
-- Google OAuth provider isn't configured in Supabase Auth yet, and the
-  `auth.users`/`profiles` schema + `handle_new_user` trigger don't exist (Feature
-  06). Feature 04 can build the sign-in UI/flow, but a full end-to-end OAuth test
-  needs the Google provider enabled in the Supabase dashboard + a redirect URL
-  allowlisted — confirm whether to set that up when starting 04.
+- Commit 04 now as `2.1-google-signin`, or user commits himself? (unanswered)
+- Feature 05 builds `profiles` + `handle_new_user` trigger. Confirm whether to apply the migration via `npx supabase db push` (CLI must be linked to ref `vgsiwqrovctitxkruwpj`) or the Supabase MCP — and that adding the Google-avatar host to `next.config` `images.remotePatterns` is wanted when 05 renders the real avatar.
