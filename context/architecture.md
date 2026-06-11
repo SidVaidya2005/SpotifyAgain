@@ -41,7 +41,6 @@ SpotifyAgain/
 ├── CLAUDE.md                      → agent entry point, redirects here
 ├── context/                       → this documentation set (source of truth)
 │   └── DESIGN-spotify.md                  → UI/visual source of truth
-├── middleware.ts                  → refreshes Supabase session, guards personal routes
 ├── next.config.ts
 ├── tailwind.config.ts             → Tailwind v4 (mostly CSS-driven)
 ├── tsconfig.json                  → "@/*" path alias → src/*
@@ -52,6 +51,7 @@ SpotifyAgain/
 │   └── seed.sql                   → optional dev/demo seed data (public songs)
 ├── public/                        → static assets (logos, placeholder art)
 └── src/
+    ├── proxy.ts                   → Next 16 request entry (was root middleware.ts): refreshes session, guards personal routes
     ├── app/
     │   ├── layout.tsx             → root layout: providers + app shell
     │   ├── globals.css            → @import "tailwindcss" + base styles
@@ -75,7 +75,7 @@ SpotifyAgain/
     │   └── supabase/
     │       ├── client.ts          → createClient() for browser/client components
     │       ├── server.ts          → createClient() for Server Components / Actions / Route Handlers
-    │       └── middleware.ts      → updateSession() used by middleware.ts
+    │       └── middleware.ts      → updateSession() helper used by src/proxy.ts
     └── types/
         ├── database.types.ts      → generated Supabase types
         └── index.ts               → domain types (Song, Playlist, …)
@@ -106,7 +106,7 @@ SpotifyAgain/
 
 ```
 Browser request (signed in OR anonymous)
-  → middleware.ts (refresh session; redirect only personal routes if no user)
+  → proxy.ts (refresh session; redirect only personal routes if no user)
   → app/(site)/<page>.tsx (Server Component)
   → src/server/<fetcher>() with server Supabase client (RLS applies)
   → render HTML with data → client components hydrate
@@ -254,7 +254,7 @@ short-lived signed URLs) is out of scope (see `project-overview.md`).
 - Flow: client calls `signInWithOAuth({ provider: 'google', options: { redirectTo: '<site>/auth/callback?next=<current-path>' } })` → Google → `/auth/callback` exchanges the code for a session via `exchangeCodeForSession`, then redirects to the validated same-origin `next` path.
 - **Public (no session):** Home, Search, playback of public songs, the login surface, and `/auth/callback`.
 - **Protected (session required):** creator actions (upload, like, create/edit playlist) and personal pages (`/liked`, `/library`, `/playlist/[id]`).
-- Session check lives in `middleware.ts` (`updateSession`), which **refreshes the session on every request but only redirects personal routes** when there is no user. Auth is additionally enforced (a) in every Server Action via `supabase.auth.getUser()` and (b) in personal-page Server Components, which redirect to `/` when there is no user.
+- Session check lives in `src/proxy.ts` (Next 16's renamed `middleware.ts`; it goes in `src/` because the app does), which calls `updateSession` and **refreshes the session on every request but only redirects personal routes** when there is no user. Auth is additionally enforced (a) in every Server Action via `supabase.auth.getUser()` and (b) in personal-page Server Components, which redirect to `/` when there is no user.
 - Post-login destination: the `next` path captured when sign-in was triggered (must start with `/`, else `/`). The `profiles` row is guaranteed by the `handle_new_user` trigger, so the callback only handles session exchange + redirect — it never writes the profile.
 
 ---
@@ -320,6 +320,24 @@ export async function createClient() {
 ```
 
 ### Session refresh middleware
+
+This `updateSession` helper is invoked by `src/proxy.ts` (Next 16 renamed the
+`middleware.ts` entry/export to `proxy.ts`/`proxy`; it lives in `src/` because the
+app does, and the helper keeps its name). The entry is just:
+
+```typescript
+// src/proxy.ts
+import { type NextRequest } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
+
+export async function proxy(request: NextRequest) {
+  return await updateSession(request)
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+}
+```
 
 ```typescript
 // src/lib/supabase/middleware.ts
@@ -479,7 +497,7 @@ primitives; see `code-standards.md` → Visual Design.
 - Server Components and `src/server/*` use the **server** client; client components and `src/hooks/*` use the **browser** client. Never cross them.
 - RLS is **enabled on every table**; `songs` SELECT is readable by anyone when `is_public = true` (plus the owner's own rows) — every other table's policies scope strictly by `auth.uid()`. No table is ever exposed without a policy.
 - A song is exposed to other users only when `is_public = true`; a private song's row is never returned to anyone but its owner.
-- Browsing and playback of public songs require **no session**; only writes (upload/like/playlist) and personal pages (`/liked`, `/library`, `/playlist`) require auth — enforced in middleware, in Server Actions via `getUser()`, and in personal-page Server Components.
+- Browsing and playback of public songs require **no session**; only writes (upload/like/playlist) and personal pages (`/liked`, `/library`, `/playlist`) require auth — enforced in `src/proxy.ts`, in Server Actions via `getUser()`, and in personal-page Server Components.
 - Every Server Action re-verifies the user with `supabase.auth.getUser()` before any write — never trust a client-passed user id.
 - All **database** writes go through `src/actions/` Server Actions (re-checking `getUser()`); Server Components never mutate. The sole client-side write is uploading a file to Supabase Storage; the corresponding DB row is still inserted via a Server Action.
 - A user may reference (like / add to a playlist) only songs visible to them (`is_public = true` or their own); RLS enforces this on INSERT.

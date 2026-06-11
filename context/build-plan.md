@@ -49,7 +49,7 @@ The persistent sidebar + main + bottom player slot, rendered with mock data, sty
 Wire Supabase into the app with no UI behavior change yet.
 
 **Logic:**
-- Add `src/lib/supabase/{client,server,middleware}.ts` and root `middleware.ts` per `architecture.md` patterns (middleware refreshes the session; gates only `/library`, `/liked`, `/playlist`).
+- Add `src/lib/supabase/{client,server,middleware}.ts` and `src/proxy.ts` (Next 16's renamed `middleware.ts`; goes in `src/` because the app does) per `architecture.md` patterns (the proxy refreshes the session; gates only `/library`, `/liked`, `/playlist`).
 - Add `.env.local` keys (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`).
 - Configure `next.config.ts` `images.remotePatterns` for the Supabase Storage host.
 - Verify a Server Component can construct the server client without error, signed in or anonymous.

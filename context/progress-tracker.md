@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 1 — Foundation & Shell
-**Last completed:** 02 App shell layout
-**Next:** 03 Supabase clients & middleware
+**Phase:** Phase 1 — Foundation & Shell → done; entering Phase 2 — Authentication
+**Last completed:** 03 Supabase clients & middleware
+**Next:** 04 Google sign-in
 
 ---
 
@@ -22,7 +22,7 @@ immediately know what is done, what is in progress, and what is next.
 ### Phase 1 — Foundation & Shell
 - [x] 01 Project scaffold
 - [x] 02 App shell layout
-- [ ] 03 Supabase clients & middleware
+- [x] 03 Supabase clients & middleware
 
 ### Phase 2 — Authentication
 - [ ] 04 Google sign-in
@@ -92,3 +92,32 @@ immediately know what is done, what is in progress, and what is next.
   Section Title). (5) a11y: `aria-label`s on sidebar/player icon buttons, centered
   md icon-rail, ≥44px prev/next touch targets. (6) Renamed `SongCard` → `SongItem`
   to match `architecture.md`. Lint + `next build` green.
+- **03 — Root entry is `src/proxy.ts`, not `middleware.ts`.** Context7's Next 16
+  upgrade guide + the installed `next@16.2.9` (which carries **both**
+  `MIDDLEWARE_FILENAME='middleware'` and `PROXY_FILENAME='proxy'` constants) confirm
+  `middleware.ts`/`export middleware` are **deprecated** and renamed to
+  `proxy.ts`/`export proxy` (nodejs runtime; no edge). Adopted `proxy.ts` to avoid
+  the deprecation warning and stay current. Updated `architecture.md`,
+  `library-docs.md`, `build-plan.md` to match.
+- **03 — The proxy lives in `src/`, not the repo root.** With a `src/` app dir,
+  Next only detects the request entry at `src/proxy.ts`; a repo-root `proxy.ts` was
+  **silently ignored** (empty `middleware-manifest.json`, no `Proxy` line in the
+  build output). The context docs originally placed it at root — corrected to
+  `src/proxy.ts`. Confirmation signal: `npm run build` prints `ƒ Proxy (Middleware)`
+  only when the file is in `src/`.
+- **03 — `getUser()` for an anonymous request returns `{ user: null, error: "Auth
+  session missing!" }`** — this is the **expected** no-session state, not a failure.
+  All patterns gate on `!user` and ignore that error; never surface it.
+- **03 — Committed `.env.example` template** (un-ignored via `!.env.example` in
+  `.gitignore`) documents the three `NEXT_PUBLIC_*` keys for reviewers; real creds
+  live in the gitignored `.env.local`. `next.config.ts` `images.remotePatterns` is
+  pinned to the specific project host (`vgsiwqrovctitxkruwpj.supabase.co`), scoped to
+  `/storage/v1/object/public/**`.
+- **03 — Private-folder gotcha (noted during verification).** App Router folders
+  prefixed with `_` (e.g. `__verify`) are **private folders** excluded from routing
+  and 404 — relevant for any future opt-out segment naming.
+- **03 — Verified end-to-end:** lint + `next build` green (no deprecation warning);
+  dev server `/` → 200 for anon with `proxy.ts` running and `getUser()` → `null`
+  clean; `/library` & `/liked` → 307 → `/`; a non-protected path 404s without
+  redirect; a temporary Server Component confirmed the server client constructs and
+  `getUser()` resolves cleanly, then was removed. No UI/providers added (those are 04+).

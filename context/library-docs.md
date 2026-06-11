@@ -45,15 +45,17 @@ client snippets in `architecture.md` → Key Patterns.
 Construct clients **only** in `src/lib/supabase/`. Browser components import the
 browser client; Server Components / Actions / Route Handlers import the server
 client. See `architecture.md` → Key Patterns for the full `client.ts`,
-`server.ts`, and `middleware.ts` bodies. `middleware.ts` at the repo root wires
-it up:
+`server.ts`, and `middleware.ts` bodies. `src/proxy.ts` (Next 16 renamed the
+`middleware.ts`/`middleware` entry to `proxy.ts`/`proxy`; it lives in `src/`
+because the app does, and the `src/lib/supabase/middleware.ts` helper keeps its
+name) wires it up:
 
 ```typescript
-// middleware.ts
+// src/proxy.ts
 import { type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   return await updateSession(request)
 }
 
