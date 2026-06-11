@@ -18,20 +18,20 @@ export function PlayerBar() {
         {/* Center: Controls */}
         <div className="flex items-center gap-8 flex-shrink-0">
           <button
-            className="text-muted hover:text-text transition"
-            title="Previous"
+            className="p-3 text-muted hover:text-text transition"
+            aria-label="Previous"
           >
             <FiSkipBack className="h-6 w-6" />
           </button>
           <button
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-base transition hover:bg-accent-border"
-            title="Play"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-black transition hover:bg-accent-border"
+            aria-label="Play"
           >
-            <FiPlay className="h-6 w-6 text-base fill-current" />
+            <FiPlay className="h-6 w-6 fill-current" />
           </button>
           <button
-            className="text-muted hover:text-text transition"
-            title="Next"
+            className="p-3 text-muted hover:text-text transition"
+            aria-label="Next"
           >
             <FiSkipForward className="h-6 w-6" />
           </button>

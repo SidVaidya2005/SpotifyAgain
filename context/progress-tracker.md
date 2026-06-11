@@ -80,3 +80,15 @@ immediately know what is done, what is in progress, and what is next.
 
 - **02 — Separate `<Sidebar>` and `<BottomNav>` components.** Chose distinct components over a single responsive variant component — cleaner separation of concerns, easier to extend per-layout if needed. Icon rail at `md` uses `md:block lg:hidden` to show a music note (♫), full text labels at `lg`+.
 - **02 — Song type created early.** `src/types/index.ts` defines `Song` and `ActionResult<T>` now; Supabase types (Feature 06) will replace it without refactoring the grid/card components.
+- **02 (verification pass) — audit fixes applied.** Reviewed the shell against
+  `DESIGN-spotify.md`/`code-standards.md` and corrected: (1) **`text-base` is a
+  Tailwind v4 font-size utility, NOT a color** — it collides with the `--color-base`
+  token, so the play-button icon was rendering white. Use `text-black` for the
+  `#000000` play icon; never use `text-base` expecting the base color. (2) `<main>`
+  bottom padding now `pb-48 md:pb-24` so mobile content clears both the BottomNav
+  and player bar. (3) Removed raw gray `border-border` dividers (DESIGN §7) — sidebar
+  relies on `bg-surface`/`bg-base` shade contrast; BottomNav uses a 1px inset
+  `shadow-[0_-1px_0_var(--color-base)]` seam. (4) Home `<h1>` → `text-2xl` (24px
+  Section Title). (5) a11y: `aria-label`s on sidebar/player icon buttons, centered
+  md icon-rail, ≥44px prev/next touch targets. (6) Renamed `SongCard` → `SongItem`
+  to match `architecture.md`. Lint + `next build` green.

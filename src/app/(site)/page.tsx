@@ -1,4 +1,4 @@
-import { SongCard } from '@/components/SongCard'
+import { SongItem } from '@/components/SongItem'
 import type { Song } from '@/types'
 
 const MOCK_SONGS: Song[] = [
@@ -68,13 +68,13 @@ export default function Home() {
   return (
     <div className="space-y-8 p-6">
       <div>
-        <h1 className="text-3xl font-bold text-text">Recently Uploaded</h1>
+        <h1 className="text-2xl font-bold text-text">Recently Uploaded</h1>
         <p className="text-sm text-muted">Discover the latest tracks</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {MOCK_SONGS.map((song) => (
-          <SongCard key={song.id} song={song} />
+          <SongItem key={song.id} song={song} />
         ))}
       </div>
     </div>

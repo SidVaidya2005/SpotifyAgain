@@ -1,10 +1,10 @@
 import type { Song } from '@/types'
 
-interface SongCardProps {
+interface SongItemProps {
   song: Song
 }
 
-export function SongCard({ song }: SongCardProps) {
+export function SongItem({ song }: SongItemProps) {
   return (
     <div className="group cursor-pointer rounded-lg bg-card p-4 transition hover:bg-card-2">
       {/* Cover placeholder */}

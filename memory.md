@@ -1,47 +1,66 @@
-# Memory — Feature 02: App Shell Layout
+# Memory — Feature 02 App Shell Layout (verification pass)
 
-Last updated: 2026-06-11
+Last updated: 2026-06-12
 
 ## What was built
 
-Feature **02 App shell layout** (Phase 1) — complete and verified. Established the visual foundation with responsive shell, design tokens, font, and mock-data grid:
+This session was a **verification/audit pass on Feature 02 (App Shell Layout)**,
+which was already built. No new feature scope — corrected the existing shell to
+match the context docs. Files touched (all uncommitted, on `main`):
 
-- **`src/app/globals.css`** — full `@theme` block (colors, breakpoints, radii, shadows) + body base styles
-- **`src/lib/utils.ts`** — `cn()` helper (clsx + tailwind-merge)
-- **`src/lib/constants.ts`** — `STORAGE_BUCKETS`, `ACCEPTED_AUDIO_TYPES`, `ACCEPTED_IMAGE_TYPES`
-- **`src/types/index.ts`** — `Song` type (8 fields) + `ActionResult<T>` union
-- **`src/app/layout.tsx`** — Figtree font, root shell: Sidebar + main + PlayerBar + BottomNav
-- **`src/components/Sidebar.tsx`** — responsive sidebar: full at `lg`+, icon rail at `md`, hidden below
-- **`src/components/BottomNav.tsx`** — fixed nav visible only below `md`, hidden at md+
-- **`src/components/player/PlayerBar.tsx`** — fixed full-width bar (h-24), 3 layout zones (cover/title, controls, volume)
-- **`src/components/SongCard.tsx`** — song card component (cover placeholder, title, author, hover state)
-- **`src/app/(site)/page.tsx`** — Home Server Component with 6 mock songs, responsive grid (1→2→3→4→5 cols)
+- `src/components/player/PlayerBar.tsx` — fixed play-icon color bug; a11y.
+- `src/app/layout.tsx` — mobile bottom padding; deduped body color classes.
+- `src/components/Sidebar.tsx` — removed gray border; aria-labels; centered md rail; dropped fragment.
+- `src/components/BottomNav.tsx` — removed gray border (inset shadow seam); redundant-class cleanup.
+- `src/app/(site)/page.tsx` — h1 size; grid cleanup; SongItem import/usage.
+- `src/components/SongCard.tsx` → `src/components/SongItem.tsx` — `git mv` rename (component `SongCard`→`SongItem`, props `SongCardProps`→`SongItemProps`).
+- `context/progress-tracker.md` — appended the verification-pass note.
+
+The approved plan lives at
+`/Users/siddarthvaidya/.claude/plans/02-app-shell-layout-verify-elegant-yao.md`.
 
 ## Decisions made
 
-- **Separate `<Sidebar>` and `<BottomNav>` components** — not a single responsive variant. Clearer boundaries, easier to maintain/extend.
-- **Song type created now** — matches schema from `architecture.md`; Feature 06 (Supabase) replaces with generated types, no refactor needed.
-- **Styled player bar shell** — correct height, zones, placeholder content; Feature 09 drops audio logic in without restyling.
-- **Grid responsive fully wired** — `grid-cols-1 xs:grid-cols-2 sm:grid-cols--2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5` all in place at build time.
+- **`text-base` is a Tailwind v4 font-size utility, NOT a color.** It collides
+  with the `--color-base` token in the shared `text-` namespace and resolves to
+  font-size, so the play icon was rendering white-on-green. Use `text-black` for
+  the `#000000` play icon. Never write `text-base` expecting the base color.
+  (Verified via Context7 `/tailwindlabs/tailwindcss.com`.)
+- **No raw gray borders** (DESIGN §7). Sidebar uses `bg-surface`/`bg-base` shade
+  contrast for separation; BottomNav uses a 1px inset `shadow-[0_-1px_0_var(--color-base)]`
+  seam instead of `border-border`.
+- **Mobile padding:** `<main>` is `pb-48 md:pb-24` — base clears player + bottom
+  nav; at md+ the nav is hidden so only the player (96px) needs clearing.
+- Kept `PlayerBar` as `'use client'` (Feature 09 needs it imminently — avoid churn).
+- Left the "SpotifyAgain" wordmark as-is (established product name across all docs).
 
 ## Problems solved
 
-- None this session — Feature 02 built without friction.
+- The white-play-icon defect (root cause = the `text-base` font-size/color
+  collision above). Fixed with `text-black` on the button + removing `text-base`
+  from the `<FiPlay>` icon (it now inherits).
 
 ## Current state
 
-- ✅ App compiles and runs (`npm run dev` at localhost:3000)
-- ✅ Shell renders with all components (Sidebar, BottomNav, PlayerBar, Home grid)
-- ✅ Responsive layout verified: sidebar full→rail→hidden, nav shows only below md, grid columns correct at every breakpoint
-- ✅ Design tokens applied: dark background (`#121212`), white text, Spotify Green accents (`#1ed760`), all colors in use
-- ✅ Figtree font loaded and applied via `next/font/google`
-- ✅ Lint clean, build succeeds
-- ✅ progress-tracker.md updated: Feature 02 ✅, Next: Feature 03
+- All 7 plan findings applied. **`npm run lint` clean**, **`npm run build` green**
+  (Next.js 16.2.9, TypeScript passed, 4 static pages generated).
+- Changes are **uncommitted** in the working tree (git status shows the 5 edits,
+  the SongCard→SongItem rename, and the progress-tracker edit).
+- progress-tracker: Phase 1, Last completed = **02**, Next = **03**.
 
 ## Next session starts with
 
-**Feature 03 — Supabase clients & middleware.** Wire Supabase clients (`src/lib/supabase/{client,server,middleware}.ts`), root `middleware.ts` (session refresh), `.env.local` keys, and `next.config.ts` image patterns. No UI/auth behavior yet — just plumbing so Features 04+ can use Supabase. Verify a Server Component constructs the server client without error, signed in or anonymous.
+Two options, in order:
+1. (Optional, not yet done) Visual confirmation: `npm run dev` and view at
+   375 / 768 / 1024 / 1440px — dark play icon, no mobile overlap, no gray seams,
+   centered md icon-rail, 24px h1.
+2. The roadmap item: **03 — Supabase clients & middleware** (Phase 1). Per
+   CLAUDE.md, read `context/` first; pull `@supabase/ssr` + Next.js 16 middleware
+   docs from Context7 before writing. Supabase clients live ONLY in
+   `src/lib/supabase/`; service-role key never in client code.
 
 ## Open questions
 
-- None blocking.
+- Should the uncommitted Feature 02 verification changes be committed before
+  starting 03? (Reminder: per global CLAUDE.md, **never add a co-author** to commits.)
+- Visual breakpoint check was deferred — confirm whether it's wanted before 03.

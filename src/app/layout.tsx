@@ -19,10 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={figtree.variable}>
-      <body className="flex h-dvh flex-col bg-base text-text">
+      <body className="flex h-dvh flex-col">
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
-          <main className="flex-1 overflow-y-auto pb-24 lg:pb-24 md:pb-24">
+          <main className="flex-1 overflow-y-auto pb-48 md:pb-24">
             {children}
           </main>
         </div>
