@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 3 — Songs & Upload (in progress)
-**Last completed:** 07 Upload song flow (UploadModal + createSong action + Header trigger; lint + build green; **live upload round-trip user-verified working**)
-**Next:** 08 Home & library wired to real songs
+**Phase:** Phase 3 — Songs & Upload (complete) → Phase 4 — Playback (next)
+**Last completed:** 08 Home & library wired to real songs (real catalog reads replace MOCK_SONGS; new `/library` page; `SongGrid` extracted; lint + build green; populated grid + anon RLS visibility + library gating verified headlessly via a temp sentinel song)
+**Next:** 09 Persistent player
 
 ---
 
@@ -31,7 +31,7 @@ immediately know what is done, what is in progress, and what is next.
 ### Phase 3 — Songs & Upload
 - [x] 06 Database schema & storage
 - [x] 07 Upload song flow
-- [ ] 08 Home & library wired to real songs
+- [x] 08 Home & library wired to real songs
 
 ### Phase 4 — Playback
 - [ ] 09 Persistent player
@@ -258,3 +258,34 @@ immediately know what is done, what is in progress, and what is next.
   `songs` row + Storage objects). React Query NOT used here (deferred to Feature 11); success path is
   action `revalidatePath` + client `router.refresh()`. Note: uploaded song still won't *appear* in the
   UI until Feature 08 wires real reads (Home is still `MOCK_SONGS`).
+- **08 — New files:** `src/server/get-songs.ts` (`getSongs()` — verbatim from `architecture.md` → Key
+  Patterns), `src/server/get-songs-by-user.ts` (`getSongsByUser(userId)` — same shape + `.eq('user_id',
+  userId)`), `src/components/SongGrid.tsx`, `src/app/(site)/library/page.tsx`. Modified
+  `src/app/(site)/page.tsx` (deleted `MOCK_SONGS`; now `async`, reads `getSongs()`). Reads degrade
+  gracefully (log `[getSongs]`/`[getSongsByUser]`, return `[]`); no mutations, no client fetching.
+- **08 — Home shows "everything RLS allows", a conscious deviation.** `getSongs()` is `select('*')` with
+  no `is_public` filter (the documented snippet). Anon sees only public songs (RLS); a **signed-in
+  uploader also sees their own private songs on Home**. This softly differs from project-overview's "a
+  private one appears only in the uploader's library" prose, but does **not** break the security
+  invariant — RLS still hides private rows from *other* users. Chosen by the user during /architect over
+  an explicit public-only filter. If we ever want Home strictly public-only, add `.eq('is_public', true)`
+  to `getSongs` (Library would keep its own fetcher).
+- **08 — `SongGrid` extracted as a shared presentational primitive** (Server-renderable, no `'use
+  client'`): owns the responsive 1→2→3→4→5 grid + the minimal empty message (`emptyMessage` prop). Home
+  and Library both render it; Liked/Search/Playlist will reuse it. Per code-standards "repeated patterns
+  become primitives." `SongItem` left untouched — **cover art is still the grey placeholder** (no
+  `<Image>`/`getPublicUrl` wiring; deferred). No click-to-play (Features 09–10).
+- **08 — `/library` scope kept tight (build-plan §12 deferred).** Page = `requireUser()` →
+  `getSongsByUser(user.id)` → `SongGrid` with a minimal "You haven't uploaded any songs yet." message.
+  The **dedicated Library upload button, the public/private indicator badge, and the polished empty
+  state stay in §12**. Upload affordance for Library users is the existing signed-in "+" in the `Header`
+  (reachable at every breakpoint) — not moved/duplicated here.
+- **08 — Verified:** `npm run lint` clean; `npm run build` green (`/` + `/library` both `ƒ (Dynamic)`;
+  build still prints `ƒ Proxy (Middleware)`). Runtime (dev): anon `/` → 200 with no `MOCK_SONGS`; anon
+  `/library` → 307 → `/`. **Populated + RLS path verified with a temp sentinel song:** inserted one
+  public + one private `songs` row (under the lone real user) via the Supabase MCP → anon Home rendered
+  **only the public** title in the grid, **private correctly hidden** → deleted both rows (`songs` count
+  back to 0). **Still needs a user run** (same Google-OAuth/file-picker constraint as 07): the *signed-in*
+  views — Home additionally showing the user's own private songs, `/library` listing the user's uploads —
+  and the full 07→08 flow (upload via Header "+" → song appears on Home/Library immediately). Catalog is
+  currently **empty** (0 songs); the Feature-07 test uploads were cleaned up at some point.
