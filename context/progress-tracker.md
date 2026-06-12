@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 5 — Library & Likes **COMPLETE** (12 built, lint/build green, **live-verified in browser**)
-**Last completed:** 12 Library polish — public/private chip on Library cards (`VisibilityBadge`, opt-in `showVisibility` prop threaded `SongGrid → SongItem`, Library-only), a dedicated `LibraryUploadButton` (header when songs exist + inside a polished `LibraryEmptyState`), and the polished empty state replacing `SongGrid`'s plain text. No schema/action/read/dep change. Lint + build green (`/library` = `ƒ (Dynamic)`).
-**Next:** Phase 6 — 13 Create, rename & delete playlists
+**Phase:** Phase 6 — Playlists **IN PROGRESS** (13 built, lint/build green, anon-gating headless-verified; **signed-in flow pending live user run**)
+**Last completed:** 13 Create, rename & delete playlists — `use-playlist-modal` store (carries `editing` context), `PlaylistModal` (one modal, create/rename, title-only), `create`/`rename`/`delete-playlist` Server Actions, `useUserPlaylists` React Query hook, `get-playlist.ts` read, `PlaylistList` (sidebar, signed-in only), `PlaylistHeaderActions` (rename + confirm-dialog delete), and the owner-only `/playlist/[id]` page. Header gains a signed-in "Create playlist" button (mobile reach). **No schema/dep change** (`playlists` + RLS shipped in 06). Lint + build green (`/playlist/[id]` = `ƒ (Dynamic)`).
+**Next:** Phase 6 — 14 Playlist tracks & detail page
 
 ---
 
@@ -42,7 +42,7 @@ immediately know what is done, what is in progress, and what is next.
 - [x] 12 Library polish
 
 ### Phase 6 — Playlists
-- [ ] 13 Create, rename & delete playlists
+- [x] 13 Create, rename & delete playlists
 - [ ] 14 Playlist tracks & detail page
 
 ### Phase 7 — Search
@@ -409,3 +409,38 @@ immediately know what is done, what is in progress, and what is next.
   `/library` → polished empty state + working Upload CTA; upload one public + one private → both appear immediately with
   correct chips; header Upload button shows when songs exist; Home/`/liked`/Search render NO chip. **Phase 5 — Library &
   Likes now fully complete.**
+- **13 — New files:** `src/stores/use-playlist-modal.ts` (store with `editing: {id,title}|null` — null=create, set=rename;
+  still ephemeral UI state, no Supabase), `src/actions/{create,rename,delete}-playlist.ts` (verbatim `create-song` contract:
+  getUser re-check → mutate → log raw + user-safe error → `revalidatePath`), `src/hooks/useUserPlaylists.ts` (React Query
+  `['user-playlists']`, browser client, `enabled:!!user` — mirrors `useLikedSongs`), `src/server/get-playlist.ts`
+  (`getPlaylistById` → `maybeSingle()`, RLS-scoped, returns null), `src/components/modals/PlaylistModal.tsx` (one modal both
+  modes), `src/components/PlaylistList.tsx` (sidebar list), `src/components/playlist/PlaylistHeaderActions.tsx`,
+  `src/app/(site)/playlist/[id]/page.tsx`. **Modified:** `ModalProvider` (+`<PlaylistModal/>`), `Sidebar` (+`<PlaylistList/>`),
+  `Header` (+signed-in "Create playlist" `MdPlaylistAdd` button). **No schema/migration/dep** — `playlists` table + owner-RLS
+  shipped in Feature 06; `Playlist` alias already existed. (`/architect` plan: `~/.claude/plans/abstract-noodling-swan.md`.)
+- **13 — Minimal `/playlist/[id]` page now (USER-CHOSEN over page-less).** Singular `/playlist/[id]` per `architecture.md`
+  (already in `proxy.ts` `protectedPaths`). Page = `requireUser()` → `getPlaylistById(id)` → `notFound()` if null (RLS returns
+  null for non-owner/missing id, no existence leak) → header (eyebrow "Playlist" + title + `PlaylistHeaderActions`) + an empty
+  "This playlist has no songs yet." body. **Tracks (add/remove/reorder) are deliberately Feature 14** — 13 stops at the shell.
+- **13 — Surface = sidebar list + Header create (USER-CHOSEN "sidebar + mobile reach").** `PlaylistList` renders inside the
+  `Sidebar` (signed-in only, hidden for anon): "Playlists" label + "+" create at md+, the playlist **name links only at lg**
+  (the md w-24 icon-rail has no room for names — shows just the "+"). Mobile (sidebar hidden <md) gets create reach via the
+  Header "Create playlist" button (distinct `MdPlaylistAdd`, next to upload `+`). **A mobile playlist-index page is out of
+  scope for 13** — the *list* stays sidebar-only (lg). The list stays fresh via React Query: callers
+  `invalidateQueries(['user-playlists'])`; the actions own `revalidatePath` for the server-rendered page.
+- **13 — One `PlaylistModal`, create + rename (USER-CHOSEN), title-only (USER-CHOSEN).** `editing` from the store toggles mode;
+  an effect `reset({title: editing?.title ?? ''})` keyed on `isOpen`/`editing` prefills (RHF `reset`, not setState → dodges the
+  React 19 `set-state-in-effect` rule that bit 04/05/09). onSubmit is split into editing/create branches (not a ternary) so
+  `res.data.id` type-narrows cleanly (rename returns `ActionResult<void>`, create `ActionResult<{id}>`). Create → toast +
+  invalidate + `router.push('/playlist/'+id)`; rename → toast + invalidate + `router.refresh()` (page is server-read).
+  description/cover columns exist but are left unused (deferred).
+- **13 — Delete = confirm dialog (USER-CHOSEN over native confirm).** `PlaylistHeaderActions` opens a **local** (`useState`)
+  confirm built on the `Modal` shell; Delete button is `Button variant="pill"` overridden to `bg-negative text-black`
+  (twMerge keeps the last `bg-*`) so red signals destructive — accent green stays functional-only (DESIGN §7). On success:
+  toast → `invalidateQueries(['user-playlists'])` → `router.push('/')`.
+- **13 — Verified static + headless; signed-in flow PENDING live user run.** `npm run lint` clean; `npm run build` green
+  (`/playlist/[id]` = `ƒ (Dynamic)`; `ƒ Proxy (Middleware)` prints; TS passes). Headless (prod server :3098): anon
+  `/playlist/<uuid>` → 307 → `/` (proxy gate covers the new route), `/library` → 307 → `/`, `/` → 200. **Still needs a live
+  signed-in run** (Google-OAuth constraint): create via Header → modal → navigate to new `/playlist/[id]` → appears in sidebar
+  (lg); rename updates page + sidebar; delete → confirm → back to `/` + gone from sidebar; responsive (list at lg, create
+  reachable via Header <md). Cross-user `notFound()` negative path needs a 2nd real user (RLS validated structurally in 06).

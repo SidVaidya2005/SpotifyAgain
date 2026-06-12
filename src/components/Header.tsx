@@ -1,9 +1,11 @@
 'use client'
 
 import { FiPlus } from 'react-icons/fi'
+import { MdPlaylistAdd } from 'react-icons/md'
 import { useUser } from '@/hooks/useUser'
 import { useAuthModal } from '@/stores/use-auth-modal'
 import { useUploadModal } from '@/stores/use-upload-modal'
+import { usePlaylistModal } from '@/stores/use-playlist-modal'
 import { Button } from '@/components/Button'
 import { UserMenu } from '@/components/UserMenu'
 
@@ -11,6 +13,7 @@ export function Header() {
   const { user } = useUser()
   const authModal = useAuthModal()
   const uploadModal = useUploadModal()
+  const playlistModal = usePlaylistModal()
 
   return (
     <header className="flex shrink-0 items-center px-6 py-4">
@@ -23,6 +26,14 @@ export function Header() {
           // every breakpoint since the sidebar is hidden below md. (The upload
           // entry point moves into the Library page at Feature 08/12.)
           <>
+            <button
+              type="button"
+              aria-label="Create playlist"
+              onClick={playlistModal.onOpenCreate}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-accent"
+            >
+              <MdPlaylistAdd className="h-5 w-5" />
+            </button>
             <button
               type="button"
               aria-label="Upload song"

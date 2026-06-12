@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { FiHome, FiSearch, FiMusic, FiHeart } from 'react-icons/fi'
 import { useUser } from '@/hooks/useUser'
+import { PlaylistList } from '@/components/PlaylistList'
 
 const navItems = [
   { label: 'Home', href: '/', icon: FiHome },
@@ -51,6 +52,9 @@ export function Sidebar() {
           )
         })}
       </nav>
+
+      {/* The user's playlists (signed-in only); hidden for anon. */}
+      <PlaylistList />
     </aside>
   )
 }
