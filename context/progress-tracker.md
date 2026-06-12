@@ -12,8 +12,8 @@ immediately know what is done, what is in progress, and what is next.
 ## Current Status
 
 **Phase:** Phase 3 — Songs & Upload (in progress)
-**Last completed:** 06 Database schema & storage (migration applied via Supabase MCP; RLS + buckets verified; `database.types.ts` generated; lint + build green)
-**Next:** 07 Upload song flow
+**Last completed:** 07 Upload song flow (UploadModal + createSong action + Header trigger; lint + build green; live upload round-trip pending user verification)
+**Next:** 08 Home & library wired to real songs
 
 ---
 
@@ -30,7 +30,7 @@ immediately know what is done, what is in progress, and what is next.
 
 ### Phase 3 — Songs & Upload
 - [x] 06 Database schema & storage
-- [ ] 07 Upload song flow
+- [x] 07 Upload song flow
 - [ ] 08 Home & library wired to real songs
 
 ### Phase 4 — Playback
@@ -227,3 +227,34 @@ immediately know what is done, what is in progress, and what is next.
 - **06 — Must also run this migration against the production DB at deploy (Feature 16)** if a fresh
   Supabase project is used — same caveat as the 05 migration. Pre-existing 05 advisory
   (`handle_new_user` exposed as an RPC) is unrelated to 06 and left as-is (out of scope).
+- **07 — New files:** `src/stores/use-upload-modal.ts` (mirrors `use-auth-modal`),
+  `src/actions/create-song.ts` (first real Server Action), `src/components/modals/UploadModal.tsx`.
+  Mounted `<UploadModal />` in `ModalProvider`; added a signed-in-only "+" upload button to `Header`.
+  Pattern is verbatim from `library-docs.md` → "Upload" (client direct-to-Storage × 2, then the
+  `createSong` action does the DB insert).
+- **07 — Upload trigger lives in the `Header`, not the Sidebar/Library.** Build-plan §07 implies the
+  Library, but `/library` doesn't exist until Feature 08/12 and the Sidebar is hidden below `md`. A
+  signed-in-only "+" in the Header is reachable at every breakpoint; **move/duplicate it into the
+  Library page when that lands**. Shown only when `user` is set (anon still sees "Log in"), so no
+  AuthModal path is wired from it.
+- **07 — Orphan cleanup implemented per invariant:** if the image upload or `createSong` fails after
+  the audio object is stored, the client `storage.remove()`s the already-uploaded object(s) before
+  toasting. `createSong` re-checks `getUser()` and inserts under the server-trusted `user.id` (the
+  client path prefix from `useUser()` is also enforced by Storage RLS `foldername[1] = auth.uid()`).
+- **07 — public/private is a plain native checkbox** ("Make this song public", default checked =
+  public). `DESIGN-spotify.md` has no switch/toggle spec, so we used a token-styled checkbox
+  (`accent-accent`) rather than invent a control. Inputs use the `shadow-inset-border` token +
+  `bg-surface-2` (DESIGN §4 Inputs); file inputs styled via Tailwind `file:` variants.
+- **07 — File-type validation:** `audioTypes`/`imageTypes` are `readonly string[]` views over the
+  `ACCEPTED_*` `as const` tuples so `.includes(File.type)` type-checks without `any`. `accept`
+  attrs derive from the same constants (`.join(',')`). Friendly toasts on bad type / missing file;
+  inputs disabled while `isSubmitting`; modal won't close mid-submit.
+- **07 — `router.refresh()` on success is a no-op visually for now** — Home still renders `MOCK_SONGS`
+  and there's no `/library` page, so the uploaded song won't appear in the UI until **Feature 08**
+  wires real reads (`createSong` already `revalidatePath('/')` + `'/library'` for then). Scope kept
+  strict: 07 = upload only.
+- **07 — Verified:** `npm run lint` + `npm run build` green (build still prints `ƒ Proxy (Middleware)`;
+  `/` `ƒ (Dynamic)`). **Live upload round-trip (real MP3 + cover → toast → `songs` row + Storage
+  objects, public + private) still needs a user run** — headless can't exercise Google OAuth + a real
+  file picker. React Query NOT used here (deferred to Feature 11); success path is action
+  `revalidatePath` + client `router.refresh()`.

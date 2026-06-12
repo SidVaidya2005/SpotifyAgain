@@ -1,108 +1,104 @@
-# Memory — Feature 06 Database schema & storage
+# Memory — Feature 07 Upload Song Flow
 
 Last updated: 2026-06-12
 
 ## What was built
 
-Feature 06 (Phase 3, first feature) — **built and verified**. All changes are
-**uncommitted** on `main`.
+Feature 07 (Phase 3, second feature) — **built and headless-verified**. All changes
+are **uncommitted** on `main` (latest commit `6c8fa49 3.6-catalog-schema-and-storage`).
 
 New files:
-- `supabase/migrations/20260612015610_catalog_schema_and_storage.sql` — one additive
-  migration. Creates `public.songs`, `public.playlists`, `public.playlist_songs`,
-  `public.liked_songs` with columns + RLS from `architecture.md`; FK indexes; and the
-  `songs` + `images` Storage buckets (`insert into storage.buckets ... public=true`)
-  with `storage.objects` policies (public read; owner insert/update/delete scoped to
-  `(storage.foldername(name))[1] = (select auth.uid())::text`). Matches the Feature 05
-  SQL style: `-- ====` / `-- ----` dividers, `(select auth.uid())` subselect wrapping,
-  plain `create table`. **`profiles` is NOT touched** (already exists from 05).
-  - songs RLS: SELECT (no `to` → all roles incl. anon) `using (is_public or own)`;
-    INSERT/UPDATE/DELETE `to authenticated`, owner-only. `song_path`/`image_path` are
-    **NOT NULL**.
-  - playlists: single `for all to authenticated` owner policy.
-  - playlist_songs: SELECT/UPDATE/DELETE gated on parent-playlist ownership via
-    `exists(...)`; INSERT additionally requires the song be visible (`is_public or own`).
-  - liked_songs: composite PK `(user_id, song_id)`; SELECT/DELETE owner-only; INSERT
-    requires `user_id = uid` AND song visible.
-- `src/types/database.types.ts` — generated from the live schema via Supabase MCP
-  `generate_typescript_types`.
+- `src/stores/use-upload-modal.ts` — Zustand store, exact shape of `use-auth-modal`
+  (`isOpen`/`onOpen`/`onClose`).
+- `src/actions/create-song.ts` — **first real Server Action**. `'use server'`; server
+  `createClient()`; re-checks `getUser()` → `{ error: 'You must be signed in to upload.' }`
+  if null; inserts `{ user_id: user.id, title, author, song_path, image_path, is_public }`
+  into `songs`, `.select('id').single()`; logs raw on error + returns user-safe
+  `{ error: 'Could not save the song. Please try again.' }`; `revalidatePath('/library')`
+  + `revalidatePath('/')`; returns `ActionResult<{ id }>`. Input type
+  `{ title; author; songPath; imagePath; isPublic }`.
+- `src/components/modals/UploadModal.tsx` — `'use client'`, wraps the existing `Modal`
+  (title "Add a song", desc "Upload an MP3 with cover art."), driven by
+  `use-upload-modal`. `react-hook-form` fields: `title`, `author` (required text),
+  `song`/`image` (required file inputs), `isPublic` (checkbox, default `true`). Submit
+  handler: guards `user`/files/type → `uid=uuidv4()`, paths `${user.id}/${uid}.mp3` and
+  `${user.id}/${uid}.${ext}` → upload audio → upload image (remove audio on fail) →
+  `createSong` (remove both on `{error}`) → `toast.success('Song uploaded.')` + `reset()`
+  + `onClose()` + `router.refresh()`. try/catch wraps the upload steps → single friendly
+  `toast.error`. Inputs disabled while `isSubmitting`; modal won't close mid-submit.
 
 Modified:
-- `src/types/index.ts` — replaced the hand-written `interface Song` with aliases derived
-  from generated Row types: `Song`, `Playlist`, `PlaylistSong`, `LikedSong`, `Profile`
-  (`Database['public']['Tables'][...]['Row']`). `ActionResult` unchanged.
-- `context/progress-tracker.md` — 06 checked off; status → "Phase 3 in progress, 07 next";
-  full decision log appended.
+- `src/providers/ModalProvider.tsx` — mounts `<UploadModal />` next to `<AuthModal />`.
+- `src/components/Header.tsx` — added a **signed-in-only** circular "+" button
+  (`react-icons/FiPlus`, `aria-label="Upload song"`, h-11 w-11, `bg-surface-2`) before
+  `<UserMenu>` that calls `useUploadModal().onOpen()`. Anonymous users still see "Log in".
+- `context/progress-tracker.md` — 07 checked off; status → "08 next"; full decision log appended.
 
-Approved plan: `/Users/siddarthvaidya/.claude/plans/yes-changes-are-already-wiggly-clock.md`.
+Approved plan: `/Users/siddarthvaidya/.claude/plans/07-upload-song-flow-bubbly-canyon.md`.
 
 ## Decisions made
 
-- **Storage buckets created IN the migration** (not the dashboard) so
-  `supabase/migrations/` stays the single source of truth (invariant). Buckets are
-  public-read = "unlisted" privacy only; object URLs are NOT access-controlled (per
-  architecture.md — `is_public` only hides private rows from the catalog via RLS).
-- **`songs.song_path` / `image_path` are NOT NULL** — every song needs audio + cover, and
-  this keeps the generated `Song` field types `string` (not `string | null`) so the
-  existing `MOCK_SONGS` + grid/card components type-check with zero changes.
-  `playlists.description` / `image_path` stay nullable.
-- **`Song` is now a generated-type alias**, not a hand-written interface. Regenerate
-  `database.types.ts` after every future migration.
-- **Applied via Supabase MCP this session** — MCP auth WAS available (unlike Feature 05's
-  dashboard fallback). `apply_migration` → `{"success":true}`.
-- Indexes added on FK columns (`songs.user_id`, `playlists.user_id`,
-  `playlist_songs.playlist_id`/`song_id`, `liked_songs.song_id`) — FK hygiene, silences
-  the Supabase unindexed-FK advisor.
+- **Upload trigger lives in the `Header`, NOT the Sidebar/Library.** Build-plan §07 implies
+  the Library, but `/library` doesn't exist until Feature 08/12 and the Sidebar is hidden
+  below `md`. A signed-in-only "+" in the Header is reachable at every breakpoint. **Move /
+  duplicate it into the Library page when that lands.**
+- **Scope kept strict: 07 = upload only.** Did NOT pull Feature 08 (real catalog reads)
+  forward. Home still renders `MOCK_SONGS`; there's no `/library` page. So `router.refresh()`
+  on success is visually a no-op for now — the uploaded song won't appear in the UI until
+  Feature 08 wires real reads (the action already `revalidatePath('/')` + `'/library'`).
+- **public/private = plain native checkbox** ("Make this song public", default checked).
+  `DESIGN-spotify.md` has no switch/toggle spec, so used a token-styled checkbox
+  (`accent-accent`) rather than invent a control. Inputs use `shadow-inset-border` +
+  `bg-surface-2` (DESIGN §4); file inputs styled via Tailwind `file:` variants.
+- **Storage path prefix is client-derived (`useUser().id`) but the inserted `user_id` is
+  server-trusted** (`getUser()` in the action). Storage RLS (`foldername[1]=auth.uid()`)
+  rejects a forged prefix, so this is safe.
+- **React Query NOT used here** (still deferred to Feature 11). Success path = action
+  `revalidatePath` + client `router.refresh()`.
 
 ## Problems solved
 
-- **Supabase MCP is usable this session** (project ref `vgsiwqrovctitxkruwpj`,
-  ACTIVE_HEALTHY). `list_projects`/`apply_migration`/`execute_sql`/`get_advisors`/
-  `generate_typescript_types` all worked. (Feature 05's session couldn't surface them — no
-  longer a blocker, but if a future session can't, the Dashboard SQL Editor fallback still
-  works since the `.sql` is committed.)
-- **`execute_sql` multi-statement returns only the LAST statement's result** — run
-  structural checks as single statements (or put the meaningful SELECT last).
-- **RLS role testing via `set role anon` works** inside a DO block for write-rejection
-  probes (confirmed anon insert into songs is blocked).
+- **`.includes(File.type)` vs `as const` tuples** — `ACCEPTED_AUDIO_TYPES`/`ACCEPTED_IMAGE_TYPES`
+  are readonly literal tuples, so `.includes(someString)` won't type-check. Fixed with
+  `const audioTypes: readonly string[] = ACCEPTED_AUDIO_TYPES` widening views (no `any`).
+  `accept` attrs derive from the same constants via `.join(',')`.
+- **All deps already installed** (Feature 01 installed approved deps up front) — `react-hook-form`,
+  `uuid`, `@radix-ui/react-dialog`, `sonner`, `react-icons` all present. No `npm install` needed.
 
 ## Current state
 
-- **Feature 06 done + verified.** `npm run lint` + `npm run build` green (build still prints
-  `ƒ Proxy (Middleware)`; `/` `ƒ (Dynamic)`).
-- **Migration APPLIED** to project `vgsiwqrovctitxkruwpj`. Verified: all 4 tables
-  `relrowsecurity=true` with policy counts songs 4 / playlist_songs 4 / liked_songs 3 /
-  playlists 1; `get_advisors` (security) shows **no warnings on the 4 new tables** (only
-  pre-existing lints: 05's `handle_new_user` SECURITY DEFINER RPC-exposure + Auth
-  leaked-password — neither from 06, both left as-is/out of scope); both buckets
-  `public=true`; anon insert into `songs` correctly rejected by RLS.
-- **Phases 1 + 2 + Feature 06 done.** Catalog is still **mock data** in the UI
-  (`src/app/(site)/page.tsx` `MOCK_SONGS`) — real reads are Feature 08, not 06.
-- **All Feature-06 changes uncommitted** on `main` (latest commit `3c9764f
-  2.5-action-gating-profiles-signout`).
+- **Feature 07 built + headless-verified.** `npm run lint` clean; `npm run build` green
+  (still prints `ƒ Proxy (Middleware)`; `/` `ƒ (Dynamic)`).
+- **Live upload round-trip NOT yet run** — needs a user (Google OAuth + real file picker).
+  Headless can't exercise it. User should: dev → sign in → "+" → upload real MP3+cover
+  (public, then private) → expect toast + `songs` row + objects in `songs`/`images` buckets.
+- **Phases 1 + 2 + Features 06, 07 done.** Catalog UI is still mock (`MOCK_SONGS` in
+  `src/app/(site)/page.tsx`); no `/library` page yet.
+- **All Feature-07 changes uncommitted** on `main`. No commit made (user hasn't asked).
 
 ## Next session starts with
 
-1. **Commit decision (UNANSWERED).** Proposed message per repo convention (phase.feature):
-   **`3.6-catalog-schema-and-storage`**. **Never add a co-author** (global CLAUDE.md).
-   Confirm whether to commit or the user will.
-2. Then **07 Upload song flow** (Phase 3). Per CLAUDE.md read `context/` first. Scope:
-   `UploadModal` (react-hook-form: title, author, audio file, image file, **public/private
-   toggle defaulting to public**, loading/disabled states); client uploads both files to
-   Storage under `<user_id>/<uuid>.<ext>` then calls a new **`createSong` Server Action**
-   (`src/actions/create-song.ts`) to insert the row — full pattern already written out in
-   `context/library-docs.md` → "Upload". On any post-upload failure the client deletes the
-   orphaned object(s). Validate file types against `ACCEPTED_AUDIO_TYPES`/
-   `ACCEPTED_IMAGE_TYPES` in `src/lib/constants.ts`; `toast` success/failure; `reset()` +
-   close + `router.refresh()` on success. Needs a `use-upload-modal` Zustand store and an
-   upload trigger (likely in the Library/Header). DB types + `Song` alias are ready.
+1. **(Optional) Live-verify 07** per above if not yet done by the user.
+2. **Commit decision (UNANSWERED).** Proposed message per repo convention (phase.feature):
+   **`3.7-upload-song-flow`**. **NEVER add a co-author** (global CLAUDE.md). Confirm whether
+   to commit or the user will.
+3. Then **08 Home & library wired to real songs** (Phase 3, final feature). Per CLAUDE.md read
+   `context/` first. Scope: `src/server/get-songs.ts` (RLS-scoped, recently-uploaded public +
+   own) feeding Home — **replace `MOCK_SONGS`** in `src/app/(site)/page.tsx`; create
+   `src/server/get-songs-by-user.ts` + the `/library` page (`src/app/(site)/library/page.tsx`,
+   a Server Component that calls `requireUser()` from `src/server/require-user.ts`) listing the
+   user's uploads (public + private). `getSongs` read pattern is in `architecture.md` → Key
+   Patterns. This is when uploaded songs finally become visible — verifies 07 end-to-end too.
+   Note: cover images render via `<Image>` (Supabase Storage host already in
+   `next.config.ts` remotePatterns) — `SongItem` currently shows a placeholder, may wire art here.
 
 ## Open questions
 
-- Commit 06 now as `3.6-catalog-schema-and-storage`, or user commits himself?
-- For 07: where does the "upload" entry point live? Build-plan says Library, but `/library`
-  page doesn't exist yet (Feature 08/12 flesh it out). May need a minimal trigger now
-  (e.g. a "+" in the sidebar/Header) and full Library polish later. Decide at 07 start.
-- The cross-user visibility-gated INSERT (`liked_songs`/`playlist_songs` "song must be
-  visible") is validated structurally + via Context7 but NOT runtime-tested (needs a 2nd
-  real auth user + data + sessions). Real coverage lands in Features 08/11 — verify there.
+- Commit 07 now as `3.7-upload-song-flow`, or user commits himself?
+- For 08: where does the upload "+" trigger ultimately live — keep in Header, or move into the
+  new `/library` page (and/or duplicate)? Decided to revisit when Library lands (= now, at 08).
+- The cross-user visibility-gated INSERT (`liked_songs`/`playlist_songs` "song must be visible")
+  is still NOT runtime-tested (needs a 2nd real auth user + data + sessions). Lands in Features
+  08/11 — verify there.
+- Live upload round-trip + orphan-cleanup path (force `createSong` error, confirm Storage objects
+  removed) not yet exercised — optional manual check.
