@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { FiPlay } from 'react-icons/fi'
 import { useLoadImage } from '@/hooks/useLoadImage'
 import { LikeButton } from '@/components/LikeButton'
+import { AddToPlaylistButton } from '@/components/AddToPlaylistButton'
 import { VisibilityBadge } from '@/components/VisibilityBadge'
 import type { Song } from '@/types'
 
@@ -34,6 +35,9 @@ export function SongItem({ song, onClick, showVisibility }: SongItemProps) {
             className="object-cover"
           />
         )}
+
+        {/* Add to playlist (top-left): hover-reveal. */}
+        <AddToPlaylistButton songId={song.id} revealOnHover className="absolute left-1 top-1" />
 
         {/* Like (top-right): hover-reveal, but stays visible once liked. */}
         <LikeButton songId={song.id} revealOnHover className="absolute right-1 top-1" />

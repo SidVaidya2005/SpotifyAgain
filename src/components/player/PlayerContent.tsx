@@ -15,6 +15,7 @@ import { useLoadImage } from '@/hooks/useLoadImage'
 import { SeekSlider } from '@/components/player/SeekSlider'
 import { VolumeSlider } from '@/components/player/VolumeSlider'
 import { LikeButton } from '@/components/LikeButton'
+import { AddToPlaylistButton } from '@/components/AddToPlaylistButton'
 import { usePlayer } from '@/stores/use-player'
 import type { Song } from '@/types'
 
@@ -130,8 +131,9 @@ export function PlayerContent({ song, songUrl }: PlayerContentProps) {
           <p className="truncate text-sm font-bold text-text">{song.title}</p>
           <p className="truncate text-xs text-muted">{song.author}</p>
         </div>
-        {/* Like the now-playing track — always visible (covers touch widths). */}
+        {/* Like + add the now-playing track — always visible (covers touch widths). */}
         <LikeButton songId={song.id} className="flex-shrink-0" />
+        <AddToPlaylistButton songId={song.id} className="hidden flex-shrink-0 sm:flex" />
       </div>
 
       {/* Center: controls + seek bar */}

@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 6 — Playlists **IN PROGRESS** (13 built, lint/build green, anon-gating headless-verified; **signed-in flow pending live user run**)
-**Last completed:** 13 Create, rename & delete playlists — `use-playlist-modal` store (carries `editing` context), `PlaylistModal` (one modal, create/rename, title-only), `create`/`rename`/`delete-playlist` Server Actions, `useUserPlaylists` React Query hook, `get-playlist.ts` read, `PlaylistList` (sidebar, signed-in only), `PlaylistHeaderActions` (rename + confirm-dialog delete), and the owner-only `/playlist/[id]` page. Header gains a signed-in "Create playlist" button (mobile reach). **No schema/dep change** (`playlists` + RLS shipped in 06). Lint + build green (`/playlist/[id]` = `ƒ (Dynamic)`).
-**Next:** Phase 6 — 14 Playlist tracks & detail page
+**Phase:** Phase 6 — Playlists **COMPLETE** (14 built, lint/build green, anon-gating headless-verified; **signed-in flow pending live user run**)
+**Last completed:** 14 Playlist tracks & detail page — `get-playlist-songs.ts` read (embed `playlist_songs → songs(*)` ordered by `position`), `add`/`remove`/`reorder-song`(`-from`)`-playlist` Server Actions, `use-add-to-playlist-modal` store, `AddToPlaylistModal` (lists user playlists, empty→create), `AddToPlaylistButton` (on `SongItem` + player bar; anon→AuthModal), and the drag-sortable `PlaylistTrackList`/`PlaylistTrackRow` (@dnd-kit) wired into `/playlist/[id]`. **One new approved dep: @dnd-kit** (core/sortable/modifiers/utilities) — `code-standards.md` approved-deps amended. No schema/migration (`playlist_songs` + RLS shipped in 06). Lint + build green (`/playlist/[id]` = `ƒ (Dynamic)`).
+**Next:** Phase 7 — 15 Search page
 
 ---
 
@@ -43,7 +43,7 @@ immediately know what is done, what is in progress, and what is next.
 
 ### Phase 6 — Playlists
 - [x] 13 Create, rename & delete playlists
-- [ ] 14 Playlist tracks & detail page
+- [x] 14 Playlist tracks & detail page
 
 ### Phase 7 — Search
 - [ ] 15 Search page
@@ -444,3 +444,47 @@ immediately know what is done, what is in progress, and what is next.
   signed-in run** (Google-OAuth constraint): create via Header → modal → navigate to new `/playlist/[id]` → appears in sidebar
   (lg); rename updates page + sidebar; delete → confirm → back to `/` + gone from sidebar; responsive (list at lg, create
   reachable via Header <md). Cross-user `notFound()` negative path needs a 2nd real user (RLS validated structurally in 06).
+- **14 — New files (8):** `src/server/get-playlist-songs.ts` (`getPlaylistSongs` — embeds `playlist_songs → songs(*)`,
+  `order('position', asc)`, `.returns<{position;songs:Song}[]>()` override like `get-liked-songs`, maps to `row.songs`);
+  `src/actions/{add-song-to-playlist,remove-song-from-playlist,reorder-playlist}.ts` (verbatim `toggle-like`/`create-playlist`
+  contract — getUser re-check, log raw + user-safe error, `revalidatePath('/playlist/'+id)`); `src/stores/use-add-to-playlist-modal.ts`
+  (`{isOpen, songId, onOpen(id), onClose}`); `src/components/modals/AddToPlaylistModal.tsx`; `src/components/AddToPlaylistButton.tsx`;
+  `src/components/playlist/{PlaylistTrackList,PlaylistTrackRow}.tsx`. **Modified (5):** `ModalProvider` (+`<AddToPlaylistModal/>`),
+  `SongItem` (+`AddToPlaylistButton` top-left of cover, hover-reveal), `player/PlayerContent` (+`AddToPlaylistButton` beside the
+  player-bar like, `hidden sm:flex`), `app/(site)/playlist/[id]/page.tsx` (reads `getPlaylistSongs`, renders list or empty state),
+  `context/code-standards.md` (approved-deps list). (`/architect` plan: `~/.claude/plans/feature-14-playlist-encapsulated-marshmallow.md`.)
+- **14 — One new approved dependency: @dnd-kit** (USER-CHOSEN drag-and-drop over up/down buttons). Installed
+  `@dnd-kit/core@^6.3.1` + `@dnd-kit/sortable@^10` + `@dnd-kit/modifiers@^9` + `@dnd-kit/utilities@^3.2.2` (utilities added for
+  `CSS.Transform`; installed clean against React 19 with **no peer-dep conflict**). **Used the CLASSIC API** (`DndContext` +
+  `SortableContext` + `useSortable` + sensors), not the newer `@dnd-kit/react` package — verified exports + React-19 compat via
+  Context7 (`/clauderic/dnd-kit`) before installing. **Amended `code-standards.md` approved-deps list** per the "update the list
+  before installing" project rule.
+- **14 — All 4 /architect decisions (USER-CHOSEN; 3/4 = recommended):** (1) **numbered drag-sortable row list** (new
+  `PlaylistTrackList`/`PlaylistTrackRow`), not the card grid; (2) **drag-and-drop reorder via @dnd-kit** (the non-recommended pick —
+  required the dep above); (3) **"Add to playlist" icon button** (`MdPlaylistAdd`) on song cards + player bar → `AddToPlaylistModal`
+  (implemented as a direct icon button, not a ⋯ dropdown — no dropdown primitive exists, building one was out of scope); (4)
+  **server read + revalidate/refresh** as canonical, with **optimistic local order during drag**.
+- **14 — Freshness model (key detail).** Track list is a client component seeded from the server read; the page renders it
+  `key={tracks.map(t=>t.id).join(',')}` so any add/remove (or order-changing reorder) **remounts** it with fresh props and reseeds
+  local `items` — no props→state effect, so React 19's `set-state-in-effect` rule (which bit 04/05/09/13) is dodged entirely.
+  Reorder is **optimistic in an event handler** (`arrayMove` → `setItems` → `reorderPlaylist` → on error rollback+toast, on success
+  `router.refresh()`; a successful reorder yields the same key so no remount/flash). Remove uses a list-owned `removingId` + `router.refresh()`.
+- **14 — Position handling.** Add appends at `max(position)+1` (0 if empty; `maybeSingle()` on a desc-ordered `limit(1)` read).
+  Reorder rewrites every row's `position` to its array index via **sequential awaited UPDATEs** — safe because there is **no
+  `unique(playlist_id, position)` constraint** (only `unique(playlist_id, song_id)`), so transient duplicate positions can't violate
+  anything. Remove leaves position **gaps on purpose** — harmless since every read is `order('position', asc)`. Duplicate-add maps the
+  `23505` unique violation to a friendly "That song is already in this playlist." via the code-standards **error-code allowlist**; all
+  other failures use one generic user-safe message.
+- **14 — Drag UX / a11y.** Sensors = `PointerSensor` (`activationConstraint.distance: 5`, so a click-to-play isn't read as a drag) +
+  `KeyboardSensor` (`sortableKeyboardCoordinates`). Drag handle (`MdDragIndicator`) carries the dnd-kit `attributes`/`listeners` and has
+  **`touch-none`** so a touch-drag starting on the handle won't scroll the page (rows still scroll normally elsewhere). Modifiers
+  `restrictToVerticalAxis` + `restrictToParentElement`. Clicking the cover/title plays via `useOnPlay(items)` so the **queue follows
+  the playlist's current order** (build-plan §14 requirement). `AddToPlaylistButton` mirrors `LikeButton`'s anon→AuthModal gate.
+- **14 — Verified static + headless; signed-in flow PENDING live user run.** `npm run lint` clean; `npm run build` green
+  (`/playlist/[id]` = `ƒ (Dynamic)`; `ƒ Proxy (Middleware)` prints; TS passes, no `any`). Headless (prod server :3099, stopped):
+  anon `/playlist/<uuid>` → 307 → `/`, anon `/library` → 307 → `/`, anon `/` → 200. **Still needs a live signed-in run**
+  (Google-OAuth constraint): add a song from a Home/Library/Liked card → modal → pick playlist → toast → appears on `/playlist/[id]`
+  in order; re-add → "already in this playlist"; play a track → queue = playlist order + next/prev walk it; remove a track;
+  **drag to reorder** (must also work via **touch on iPad/phone** and **keyboard**) → order persists across refresh/nav; player-bar
+  "Add to playlist". Cross-user negative paths (add/reorder another user's playlist) stay RLS-enforced but aren't single-account testable.
+- **14 — Phase 6 — Playlists now COMPLETE. Next: Phase 7 — Feature 15 Search page.**
