@@ -235,16 +235,24 @@ export async function GET(request: Request) {
   const nextParam = searchParams.get('next')
   const next = nextParam?.startsWith('/') ? nextParam : '/'
 
+  // Behind a reverse proxy (Render binds the app to an internal localhost:PORT),
+  // the origin parsed from request.url is the INTERNAL host — redirecting to it
+  // sends users to e.g. localhost:10000. Use the configured public origin
+  // (NEXT_PUBLIC_SITE_URL, the same value the client builds redirectTo from);
+  // fall back to the request origin only when it isn't set (local dev).
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? origin
+
   if (code) {
     const supabase = await createClient()
     await supabase.auth.exchangeCodeForSession(code)
   }
-  return NextResponse.redirect(`${origin}${next}`)
+  return NextResponse.redirect(`${base}${next}`)
 }
 ```
 
 - The only Route Handler in the app; no other route should perform mutations.
 - Redirect only to the validated same-origin `next` path; the `profiles` row is created by the `handle_new_user` DB trigger, so the callback never upserts a profile itself.
+- **Never redirect to `new URL(request.url).origin` in a proxied deploy** — that resolves to the internal `localhost:PORT` on Render. Redirect to `NEXT_PUBLIC_SITE_URL` (falling back to `origin` locally), as above.
 
 ---
 
