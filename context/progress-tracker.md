@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 4 — Playback (10 built, lint/build green; **live browser run pending** — needs ≥2 public songs)
-**Last completed:** 10 Queue, next & previous — single-file change to `PlayerContent.tsx`. Next/prev now walk `usePlayer.ids` with wrap-around; `onend` auto-advances and **loops** at the queue end; **previous is Spotify-style** (restart if >3s in, else prior track). Handlers read live `usePlayer.getState()`. Lint + build green; queue logic not exercisable headlessly (no audio).
-**Next:** verify 10 live (≥2 songs → next/prev/wrap/onend-loop/previous-restart), then Phase 5 — 11 Like / unlike & Liked Songs
+**Phase:** Phase 5 — Library & Likes (11 built, lint/build green, **live-verified in browser**)
+**Last completed:** 11 Like / unlike & Liked Songs — **React Query's debut** (`ReactQueryProvider` finally mounted). New `LikeButton` (heart on song cards + player bar), `toggleLike` Server Action, **optimistic** `['liked-songs']` query/mutation, `/liked` page, signed-in-only "Liked Songs" nav entry. Lint + build green (`/liked` = `ƒ (Dynamic)`); **user-confirmed working live**.
+**Next:** Phase 5 — 12 Library polish
 
 ---
 
@@ -38,7 +38,7 @@ immediately know what is done, what is in progress, and what is next.
 - [x] 10 Queue, next & previous
 
 ### Phase 5 — Library & Likes
-- [ ] 11 Like / unlike & Liked Songs
+- [x] 11 Like / unlike & Liked Songs
 - [ ] 12 Library polish
 
 ### Phase 6 — Playlists
@@ -342,8 +342,46 @@ immediately know what is done, what is in progress, and what is next.
   Feature-09 remount chain (`setId` → `PlayerBar` refetch → `PlayerContent key={songUrl}` remount → autoplay).
 - **10 — Known edge:** a **single-item queue** does NOT replay on `onend` (`setId(sameId)` is a no-op → no
   remount). Acceptable; build-plan doesn't require single-track looping.
-- **10 — Verified static; LIVE PENDING.** `npm run lint` clean; `npm run build` green (`/` + `/library`
-  `ƒ (Dynamic)`; `ƒ Proxy (Middleware)` prints). Queue logic is **not exercisable headlessly** (no audio).
-  **Needs a user browser run with ≥2 public songs** (upload a 2nd via Header "+" if only one exists):
-  next/prev advance + wrap, onend auto-advance + loop at end, previous restart-if->3s vs prior-track, and
-  queue follows the launched-from list (Home vs `/library`).
+- **10 — Verified static + LIVE (user-confirmed 2026-06-12).** `npm run lint` clean; `npm run build`
+  green (`/` + `/library` `ƒ (Dynamic)`; `ƒ Proxy (Middleware)` prints). **Live browser run with ≥2 public
+  songs user-confirmed working:** next/prev advance + wrap, onend auto-advance + loop at end, previous
+  restart-if->3s vs prior-track, and queue follows the launched-from list (Home vs `/library`). **Phase 4 —
+  Playback now fully complete.**
+- **11 — React Query finally mounted (deferred since 04).** New `src/providers/ReactQueryProvider.tsx`
+  (verbatim from `library-docs.md`: `useState(() => new QueryClient({ queries: { staleTime: 60_000 } }))`),
+  mounted in `layout.tsx` **just inside `UserProvider`, wrapping the whole tree** (shell + `PlayerBar` +
+  `BottomNav`) so the grid hearts and the player heart share one cache. No new deps (`@tanstack/react-query`
+  was already installed). No migration — `liked_songs` + RLS shipped in 06.
+- **11 — New files:** `actions/toggle-like.ts` (verbatim from `code-standards.md` § Server Action:
+  getUser re-check → `maybeSingle()` existence check → delete-or-insert → `revalidatePath('/liked')` →
+  `{ data: { liked } }`); hooks `useLikedSongs.ts` (React Query `['liked-songs']` → `string[]` of liked
+  song ids, **browser** client, `enabled: !!user`) + `useToggleLike.ts` (**optimistic** mutation);
+  `components/LikeButton.tsx`; `server/get-liked-songs.ts`; `app/(site)/liked/page.tsx`.
+- **11 — Heart placement = song cards + player bar (USER-CHOSEN).** `LikeButton` added to `SongItem`'s
+  cover overlay (top-right, `revealOnHover`) and to `PlayerContent`'s left cluster (always visible — covers
+  touch widths). `PlayerBar` **untouched**: `PlayerContent` already receives the full `song`, so it just
+  reads `song.id` (no prop threading needed).
+- **11 — Optimistic toggle (USER-CHOSEN).** `useToggleLike` flips the cached `['liked-songs']` id list in
+  `onMutate` (after `cancelQueries` + snapshot), **rolls back + `toast.error` in `onError`**, and
+  `invalidateQueries(['liked-songs'])` in `onSettled`. v5 optimistic pattern verified against Context7
+  (`/tanstack/query`). All `LikeButton`s share the one query (React Query dedupes by key) so they stay in
+  sync. `LikeButton.revealOnHover` keeps a card's heart hidden until hover **unless already liked** (liked
+  hearts always show, accent-green).
+- **11 — `getLikedSongs` embed typing gotcha.** `from('liked_songs').select('songs(*)')` is a many-to-one
+  embed, but the generated types **mis-infer the embedded `songs` as `any[]`** (build failed: `any[][]`).
+  Fixed with `.returns<{ songs: Song }[]>()` (idiomatic Supabase type override — no `any`, no cast); PostgREST
+  returns one song object per like row at runtime. Ordered by `liked_songs.created_at desc` (newest like first).
+- **11 — Nav entry = signed-in only (USER-CHOSEN).** `Sidebar` + `BottomNav` append
+  `{ label: 'Liked Songs', href: '/liked', icon: FiHeart }` to their nav list **only when `useUser()` has a
+  user**; hidden for anon. (Existing always-visible "Library" entry left as-is — minor pre-existing
+  inconsistency, out of scope.) `/liked` is already proxy-gated (`protectedPaths` includes `/liked`) and the
+  page calls `requireUser()`.
+- **11 — Verified static + LIVE (user-confirmed 2026-06-12).** `npm run lint` clean; `npm run build` green
+  (`/`, `/library`, **new `/liked`** all `ƒ (Dynamic)`; `ƒ Proxy (Middleware)` prints). **Live browser run
+  user-confirmed working** ("verified everything working fine"): like from a card → heart fills instantly
+  (optimistic) → `/liked` lists it; unlike removes it; player-bar heart reflects + toggles the active track
+  in sync; anon heart click → AuthModal; "Liked Songs" nav entry signed-in-only; playing from `/liked` sets
+  the queue to the liked list. The **visibility-gated `liked_songs` INSERT** `with check` now runs on every
+  like — the **positive** path (liking a *visible* song) is exercised; the negative path (blocked when a song
+  isn't visible) is still not UI-triggerable (needs a 2nd user/private song) but the policy is live.
+  **Phase 5 — Feature 11 complete.**

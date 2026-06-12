@@ -2,7 +2,8 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { FiHome, FiSearch, FiMusic } from 'react-icons/fi'
+import { FiHome, FiSearch, FiMusic, FiHeart } from 'react-icons/fi'
+import { useUser } from '@/hooks/useUser'
 
 const navItems = [
   { label: 'Home', href: '/', icon: FiHome },
@@ -12,6 +13,12 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { user } = useUser()
+
+  // Liked Songs is a personal page — only surface it when signed in.
+  const items = user
+    ? [...navItems, { label: 'Liked Songs', href: '/liked', icon: FiHeart }]
+    : navItems
 
   // Full sidebar at lg+, icon rail at md, hidden below md (BottomNav takes over).
   // Separated from the main area by the bg-surface/bg-base shade contrast — no gray border.
@@ -25,7 +32,7 @@ export function Sidebar() {
 
       {/* Nav items */}
       <nav className="space-y-4 px-4 lg:px-6">
-        {navItems.map(({ label, href, icon: Icon }) => {
+        {items.map(({ label, href, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + '/')
           return (
             <Link

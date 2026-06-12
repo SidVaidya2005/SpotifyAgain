@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { FiPlay } from 'react-icons/fi'
 import { useLoadImage } from '@/hooks/useLoadImage'
+import { LikeButton } from '@/components/LikeButton'
 import type { Song } from '@/types'
 
 interface SongItemProps {
@@ -29,6 +30,9 @@ export function SongItem({ song, onClick }: SongItemProps) {
             className="object-cover"
           />
         )}
+
+        {/* Like (top-right): hover-reveal, but stays visible once liked. */}
+        <LikeButton songId={song.id} revealOnHover className="absolute right-1 top-1" />
 
         {/* Hover Circular Play (DESIGN §4/§9) */}
         <button

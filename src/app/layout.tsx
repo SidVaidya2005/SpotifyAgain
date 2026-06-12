@@ -3,6 +3,7 @@ import { Figtree } from 'next/font/google'
 import './globals.css'
 import { createClient } from '@/lib/supabase/server'
 import { UserProvider } from '@/providers/UserProvider'
+import { ReactQueryProvider } from '@/providers/ReactQueryProvider'
 import { ModalProvider } from '@/providers/ModalProvider'
 import { ToasterProvider } from '@/providers/ToasterProvider'
 import { Sidebar } from '@/components/Sidebar'
@@ -34,19 +35,23 @@ export default async function RootLayout({
     <html lang="en" className={figtree.variable}>
       <body className="flex h-dvh flex-col">
         <UserProvider initialUser={user}>
-          <ToasterProvider />
-          <ModalProvider />
-          <div className="flex flex-1 overflow-hidden">
-            <Sidebar />
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <Header />
-              <main className="flex-1 overflow-y-auto pb-48 md:pb-24">
-                {children}
-              </main>
+          {/* React Query wraps the whole tree so both the grid (in <main>) and the
+              layout-mounted PlayerBar share one liked-songs cache. */}
+          <ReactQueryProvider>
+            <ToasterProvider />
+            <ModalProvider />
+            <div className="flex flex-1 overflow-hidden">
+              <Sidebar />
+              <div className="flex flex-1 flex-col overflow-hidden">
+                <Header />
+                <main className="flex-1 overflow-y-auto pb-48 md:pb-24">
+                  {children}
+                </main>
+              </div>
             </div>
-          </div>
-          <PlayerBar />
-          <BottomNav />
+            <PlayerBar />
+            <BottomNav />
+          </ReactQueryProvider>
         </UserProvider>
       </body>
     </html>
