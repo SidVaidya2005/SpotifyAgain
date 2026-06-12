@@ -14,6 +14,7 @@ import {
 import { useLoadImage } from '@/hooks/useLoadImage'
 import { SeekSlider } from '@/components/player/SeekSlider'
 import { VolumeSlider } from '@/components/player/VolumeSlider'
+import { usePlayer } from '@/stores/use-player'
 import type { Song } from '@/types'
 
 interface PlayerContentProps {
@@ -38,13 +39,23 @@ export function PlayerContent({ song, songUrl }: PlayerContentProps) {
   const [volume, setVolume] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
 
+  // Advance to the next track, wrapping to the first at the end of the queue.
+  // Reads live store state (not a render closure) so the onend callback captured
+  // by use-sound at mount always walks the current queue.
+  const onPlayNext = () => {
+    const { ids, activeId, setId } = usePlayer.getState()
+    if (ids.length === 0) return
+    const i = ids.findIndex((id) => id === activeId)
+    setId(ids[i + 1] ?? ids[0]) // wrap to first
+  }
+
   const [play, { pause, sound, duration }] = useSound(songUrl, {
     format: ['mp3'],
     volume: isMuted ? 0 : volume,
     onplay: () => setIsPlaying(true),
     onpause: () => setIsPlaying(false),
-    // Auto-advance to the next queued track is Feature 10; here it just stops.
-    onend: () => setIsPlaying(false),
+    // Track finished: auto-advance to the next queued track (loops at the end).
+    onend: onPlayNext,
   })
 
   // Autoplay once the Howl is ready; unload on track change / unmount so we
@@ -83,6 +94,22 @@ export function PlayerContent({ song, songUrl }: PlayerContentProps) {
     setIsMuted(false)
   }
 
+  // Spotify-style previous: restart the current track if more than 3s in,
+  // otherwise step back one track (wrapping to the last).
+  const onPlayPrevious = () => {
+    const current = sound?.seek()
+    const elapsed = typeof current === 'number' ? current : 0
+    if (elapsed > 3) {
+      sound?.seek(0)
+      setPosition(0)
+      return
+    }
+    const { ids, activeId, setId } = usePlayer.getState()
+    if (ids.length === 0) return
+    const i = ids.findIndex((id) => id === activeId)
+    setId(ids[i - 1] ?? ids[ids.length - 1]) // wrap to last
+  }
+
   return (
     <div className="flex h-full items-center justify-between gap-4 px-4 md:px-6">
       {/* Left: cover + title/author */}
@@ -107,8 +134,8 @@ export function PlayerContent({ song, songUrl }: PlayerContentProps) {
       {/* Center: controls + seek bar */}
       <div className="flex max-w-[520px] flex-1 flex-col items-center gap-1">
         <div className="flex items-center gap-4 md:gap-6">
-          {/* TODO(Feature 10): wire previous to walk the queue */}
           <button
+            onClick={onPlayPrevious}
             className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-text"
             aria-label="Previous"
           >
@@ -125,8 +152,8 @@ export function PlayerContent({ song, songUrl }: PlayerContentProps) {
               <FiPlay className="h-6 w-6 fill-current" />
             )}
           </button>
-          {/* TODO(Feature 10): wire next to walk the queue */}
           <button
+            onClick={onPlayNext}
             className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-text"
             aria-label="Next"
           >

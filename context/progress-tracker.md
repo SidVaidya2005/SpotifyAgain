@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 4 — Playback (in progress)
-**Last completed:** 09 Persistent player — **fully verified (lint + build + headless + live browser run, user-confirmed).** Clicking a song sets the queue + active id and the bottom `PlayerBar` plays real Storage audio via `use-sound`; cover art wired in the grid + player; seek + volume + mute work; audio persists across navigation; anon can play public songs. Next/prev deliberately inert until Feature 10. (This live run also finally cleared the long-pending 07→08 round-trip.)
-**Next:** 10 Queue, next & previous
+**Phase:** Phase 4 — Playback (10 built, lint/build green; **live browser run pending** — needs ≥2 public songs)
+**Last completed:** 10 Queue, next & previous — single-file change to `PlayerContent.tsx`. Next/prev now walk `usePlayer.ids` with wrap-around; `onend` auto-advances and **loops** at the queue end; **previous is Spotify-style** (restart if >3s in, else prior track). Handlers read live `usePlayer.getState()`. Lint + build green; queue logic not exercisable headlessly (no audio).
+**Next:** verify 10 live (≥2 songs → next/prev/wrap/onend-loop/previous-restart), then Phase 5 — 11 Like / unlike & Liked Songs
 
 ---
 
@@ -35,7 +35,7 @@ immediately know what is done, what is in progress, and what is next.
 
 ### Phase 4 — Playback
 - [x] 09 Persistent player
-- [ ] 10 Queue, next & previous
+- [x] 10 Queue, next & previous
 
 ### Phase 5 — Library & Likes
 - [ ] 11 Like / unlike & Liked Songs
@@ -326,3 +326,24 @@ immediately know what is done, what is in progress, and what is next.
   (click → play, pause, seek, volume, mute), persistence across navigation, anon playback of a public
   song, and cover art all function. This live run **also finally cleared the pending 07→08 round-trip**
   (sign-in → upload → song appears → plays). Catalog now has real song(s) again.
+- **10 — Single-file change** (`src/components/player/PlayerContent.tsx`); no new files/hooks/deps/
+  migrations, no store change (`usePlayer` already had `ids`/`activeId`/`setId`). Added inline
+  `onPlayNext` / `onPlayPrevious`, wired the previously-inert prev/next buttons, and pointed `use-sound`'s
+  `onend` at `onPlayNext`. (`/architect` plan reused the feature-09 plan-file slug.)
+- **10 — onend LOOPS (USER-CHOSEN).** `onend: onPlayNext` → the last track auto-advances to the first and
+  the queue loops endlessly. Manual next wraps too (`ids[i+1] ?? ids[0]`). Matches build-plan "walk and
+  wrap" + the architecture.md/library-docs pattern.
+- **10 — Previous is Spotify-style (USER-CHOSEN).** Reads live elapsed via `sound.seek()`: **>3s in →
+  restart** current track (`sound.seek(0)` + `setPosition(0)`); else step back one (`ids[i-1] ??
+  ids[ids.length-1]`, wrap to last). Goes slightly beyond build-plan's plain "previous + wrap" by design.
+- **10 — Handlers read `usePlayer.getState()`, not render-closure values**, so the `onend` callback
+  use-sound captures at mount always walks the *current* `ids`/`activeId`. `PlayerContent` still takes
+  title/cover from props (no new store subscription, no extra re-renders). Track changes ride the existing
+  Feature-09 remount chain (`setId` → `PlayerBar` refetch → `PlayerContent key={songUrl}` remount → autoplay).
+- **10 — Known edge:** a **single-item queue** does NOT replay on `onend` (`setId(sameId)` is a no-op → no
+  remount). Acceptable; build-plan doesn't require single-track looping.
+- **10 — Verified static; LIVE PENDING.** `npm run lint` clean; `npm run build` green (`/` + `/library`
+  `ƒ (Dynamic)`; `ƒ Proxy (Middleware)` prints). Queue logic is **not exercisable headlessly** (no audio).
+  **Needs a user browser run with ≥2 public songs** (upload a 2nd via Header "+" if only one exists):
+  next/prev advance + wrap, onend auto-advance + loop at end, previous restart-if->3s vs prior-track, and
+  queue follows the launched-from list (Home vs `/library`).
