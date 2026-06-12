@@ -4,8 +4,9 @@ Last updated: 2026-06-12
 
 ## What was built
 
-Feature 07 (Phase 3, second feature) — **built and headless-verified**. All changes
-are **uncommitted** on `main` (latest commit `6c8fa49 3.6-catalog-schema-and-storage`).
+Feature 07 (Phase 3, second feature) — **built and fully verified (incl. live
+upload round-trip, user-confirmed working)**. All changes are **uncommitted** on
+`main` (latest commit `6c8fa49 3.6-catalog-schema-and-storage`).
 
 New files:
 - `src/stores/use-upload-modal.ts` — Zustand store, exact shape of `use-auth-modal`
@@ -67,22 +68,19 @@ Approved plan: `/Users/siddarthvaidya/.claude/plans/07-upload-song-flow-bubbly-c
 
 ## Current state
 
-- **Feature 07 built + headless-verified.** `npm run lint` clean; `npm run build` green
-  (still prints `ƒ Proxy (Middleware)`; `/` `ƒ (Dynamic)`).
-- **Live upload round-trip NOT yet run** — needs a user (Google OAuth + real file picker).
-  Headless can't exercise it. User should: dev → sign in → "+" → upload real MP3+cover
-  (public, then private) → expect toast + `songs` row + objects in `songs`/`images` buckets.
+- **Feature 07 built + fully verified.** `npm run lint` clean; `npm run build` green
+  (still prints `ƒ Proxy (Middleware)`; `/` `ƒ (Dynamic)`). **Live upload round-trip
+  user-confirmed working** (real MP3 + cover → toast → `songs` row + Storage objects).
 - **Phases 1 + 2 + Features 06, 07 done.** Catalog UI is still mock (`MOCK_SONGS` in
   `src/app/(site)/page.tsx`); no `/library` page yet.
 - **All Feature-07 changes uncommitted** on `main`. No commit made (user hasn't asked).
 
 ## Next session starts with
 
-1. **(Optional) Live-verify 07** per above if not yet done by the user.
-2. **Commit decision (UNANSWERED).** Proposed message per repo convention (phase.feature):
-   **`3.7-upload-song-flow`**. **NEVER add a co-author** (global CLAUDE.md). Confirm whether
-   to commit or the user will.
-3. Then **08 Home & library wired to real songs** (Phase 3, final feature). Per CLAUDE.md read
+1. **Commit decision (UNANSWERED).** Feature 07 is fully verified and ready to commit. Proposed
+   message per repo convention (phase.feature): **`3.7-upload-song-flow`**. **NEVER add a
+   co-author** (global CLAUDE.md). Confirm whether to commit or the user will.
+2. Then **08 Home & library wired to real songs** (Phase 3, final feature). Per CLAUDE.md read
    `context/` first. Scope: `src/server/get-songs.ts` (RLS-scoped, recently-uploaded public +
    own) feeding Home — **replace `MOCK_SONGS`** in `src/app/(site)/page.tsx`; create
    `src/server/get-songs-by-user.ts` + the `/library` page (`src/app/(site)/library/page.tsx`,
@@ -100,5 +98,5 @@ Approved plan: `/Users/siddarthvaidya/.claude/plans/07-upload-song-flow-bubbly-c
 - The cross-user visibility-gated INSERT (`liked_songs`/`playlist_songs` "song must be visible")
   is still NOT runtime-tested (needs a 2nd real auth user + data + sessions). Lands in Features
   08/11 — verify there.
-- Live upload round-trip + orphan-cleanup path (force `createSong` error, confirm Storage objects
-  removed) not yet exercised — optional manual check.
+- Orphan-cleanup path (force `createSong` error, confirm Storage objects removed) not yet
+  exercised — optional manual check. (Happy-path upload is confirmed working.)

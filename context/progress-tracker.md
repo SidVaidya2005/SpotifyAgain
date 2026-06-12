@@ -12,7 +12,7 @@ immediately know what is done, what is in progress, and what is next.
 ## Current Status
 
 **Phase:** Phase 3 — Songs & Upload (in progress)
-**Last completed:** 07 Upload song flow (UploadModal + createSong action + Header trigger; lint + build green; live upload round-trip pending user verification)
+**Last completed:** 07 Upload song flow (UploadModal + createSong action + Header trigger; lint + build green; **live upload round-trip user-verified working**)
 **Next:** 08 Home & library wired to real songs
 
 ---
@@ -254,7 +254,7 @@ immediately know what is done, what is in progress, and what is next.
   wires real reads (`createSong` already `revalidatePath('/')` + `'/library'` for then). Scope kept
   strict: 07 = upload only.
 - **07 — Verified:** `npm run lint` + `npm run build` green (build still prints `ƒ Proxy (Middleware)`;
-  `/` `ƒ (Dynamic)`). **Live upload round-trip (real MP3 + cover → toast → `songs` row + Storage
-  objects, public + private) still needs a user run** — headless can't exercise Google OAuth + a real
-  file picker. React Query NOT used here (deferred to Feature 11); success path is action
-  `revalidatePath` + client `router.refresh()`.
+  `/` `ƒ (Dynamic)`). **Live upload round-trip user-confirmed working** (real MP3 + cover → toast →
+  `songs` row + Storage objects). React Query NOT used here (deferred to Feature 11); success path is
+  action `revalidatePath` + client `router.refresh()`. Note: uploaded song still won't *appear* in the
+  UI until Feature 08 wires real reads (Home is still `MOCK_SONGS`).
