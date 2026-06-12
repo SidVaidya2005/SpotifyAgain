@@ -4,14 +4,18 @@ import Image from 'next/image'
 import { FiPlay } from 'react-icons/fi'
 import { useLoadImage } from '@/hooks/useLoadImage'
 import { LikeButton } from '@/components/LikeButton'
+import { VisibilityBadge } from '@/components/VisibilityBadge'
 import type { Song } from '@/types'
 
 interface SongItemProps {
   song: Song
   onClick: (id: string) => void
+  // Library only: show a public/private chip under the author. Off by default so
+  // Home/Liked/Search cards stay unchanged (is_public is the owner's own data).
+  showVisibility?: boolean
 }
 
-export function SongItem({ song, onClick }: SongItemProps) {
+export function SongItem({ song, onClick, showVisibility }: SongItemProps) {
   const imageUrl = useLoadImage(song)
 
   return (
@@ -52,6 +56,9 @@ export function SongItem({ song, onClick }: SongItemProps) {
 
       {/* Author */}
       <p className="truncate text-sm text-muted">{song.author}</p>
+
+      {/* Public/private indicator (Library only) */}
+      {showVisibility && <VisibilityBadge isPublic={song.is_public} className="mt-2" />}
     </div>
   )
 }

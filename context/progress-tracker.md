@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 5 — Library & Likes (11 built, lint/build green, **live-verified in browser**)
-**Last completed:** 11 Like / unlike & Liked Songs — **React Query's debut** (`ReactQueryProvider` finally mounted). New `LikeButton` (heart on song cards + player bar), `toggleLike` Server Action, **optimistic** `['liked-songs']` query/mutation, `/liked` page, signed-in-only "Liked Songs" nav entry. Lint + build green (`/liked` = `ƒ (Dynamic)`); **user-confirmed working live**.
-**Next:** Phase 5 — 12 Library polish
+**Phase:** Phase 5 — Library & Likes **COMPLETE** (12 built, lint/build green, **live-verified in browser**)
+**Last completed:** 12 Library polish — public/private chip on Library cards (`VisibilityBadge`, opt-in `showVisibility` prop threaded `SongGrid → SongItem`, Library-only), a dedicated `LibraryUploadButton` (header when songs exist + inside a polished `LibraryEmptyState`), and the polished empty state replacing `SongGrid`'s plain text. No schema/action/read/dep change. Lint + build green (`/library` = `ƒ (Dynamic)`).
+**Next:** Phase 6 — 13 Create, rename & delete playlists
 
 ---
 
@@ -39,7 +39,7 @@ immediately know what is done, what is in progress, and what is next.
 
 ### Phase 5 — Library & Likes
 - [x] 11 Like / unlike & Liked Songs
-- [ ] 12 Library polish
+- [x] 12 Library polish
 
 ### Phase 6 — Playlists
 - [ ] 13 Create, rename & delete playlists
@@ -385,3 +385,27 @@ immediately know what is done, what is in progress, and what is next.
   like — the **positive** path (liking a *visible* song) is exercised; the negative path (blocked when a song
   isn't visible) is still not UI-triggerable (needs a 2nd user/private song) but the policy is live.
   **Phase 5 — Feature 11 complete.**
+- **12 — New files:** `src/components/VisibilityBadge.tsx` (presentational chip),
+  `src/components/library/LibraryUploadButton.tsx` (`'use client'`), `src/components/library/LibraryEmptyState.tsx`
+  (`'use client'`). Modified: `SongItem.tsx` (+`showVisibility?` prop), `SongGrid.tsx` (+`showVisibility?` passthrough),
+  `app/(site)/library/page.tsx` (header flex row + empty/grid branch). **No schema, no Server Action, no new read, no new
+  dep** — `Song` already carried `is_public`; "newly uploaded appears immediately" was already handled by
+  `UploadModal`'s `router.refresh()` + `createSong`'s `revalidatePath('/library')` (verify-only, unchanged).
+- **12 — Badge is opt-in & Library-only (USER-CHOSEN).** `showVisibility` defaults false and is threaded
+  `SongGrid → SongItem`; only `/library` passes it, so Home/Liked/Search cards are byte-for-byte unchanged (no badge
+  leak). The chip reads the owner's own `song.is_public` — fine since Library only ever lists the owner's uploads.
+- **12 — Badge BOTH states, achromatic (USER-CHOSEN).** Shows `FiGlobe` "Public" / `FiLock` "Private" so "no chip"
+  is never ambiguous. Kept achromatic (`bg-surface-2`/`text-muted`), distinguished by icon+label — DESIGN §7/§9 reserve
+  accent green for functional highlights, so the badge must not use it. Type = DESIGN §3 Badge role (`text-2xs` 10px,
+  `font-semibold`, pill `rounded-full`). Placed **inline under the author** (`mt-2`), keeping the cover overlay (like
+  top-right / play bottom-right) clean.
+- **12 — Upload entry point = Header + empty state (USER-CHOSEN).** `LibraryUploadButton` (white pill: `Button
+  variant="white"` + `FiPlus` "Upload") opens the existing `useUploadModal()`. Rendered top-right by the title **only
+  when `songs.length > 0`**; the polished `LibraryEmptyState` carries its own copy of the same button, so the two CTAs
+  never stack. `variant="white"` keeps accent green exclusive to playback/active (easily switched to `pill` later).
+  Library page (Server Component) stays a server read; the new buttons/empty-state are the only client bits.
+- **12 — Verified static + LIVE (user-confirmed 2026-06-12, "verified everything working fine").** `npm run lint`
+  clean; `npm run build` green (`/library` `ƒ (Dynamic)`; build still prints `ƒ Proxy (Middleware)`). Live: empty-account
+  `/library` → polished empty state + working Upload CTA; upload one public + one private → both appear immediately with
+  correct chips; header Upload button shows when songs exist; Home/`/liked`/Search render NO chip. **Phase 5 — Library &
+  Likes now fully complete.**
