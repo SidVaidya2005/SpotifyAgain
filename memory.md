@@ -1,104 +1,108 @@
-# Memory — Feature 05 Action gating, profiles & sign-out
+# Memory — Feature 06 Database schema & storage
 
 Last updated: 2026-06-12
 
 ## What was built
 
-Feature 05 (Phase 2, the last feature of Phase 2) — **built and verified
-end-to-end**. All changes are **uncommitted** on `main`.
+Feature 06 (Phase 3, first feature) — **built and verified**. All changes are
+**uncommitted** on `main`.
 
 New files:
-- `supabase/migrations/20260611202834_profiles_and_handle_new_user.sql` —
-  `public.profiles` (id→auth.users on delete cascade, full_name, avatar_url,
-  updated_at); RLS enabled; **owner-only** SELECT + UPDATE using
-  `(select auth.uid()) = id`; **no INSERT policy**; `handle_new_user()`
-  (`language plpgsql security definer set search_path = ''`, fully-qualified,
-  `on conflict (id) do nothing`) + `on_auth_user_created` after-insert trigger;
-  **idempotent backfill** of existing `auth.users`.
-- `src/server/require-user.ts` — `requireUser(): Promise<User>`; server client →
-  `getUser()` → `redirect('/')` when null. The personal-page redirect pattern;
-  **not imported anywhere yet** (verified by build, not runtime).
-- `src/components/UserMenu.tsx` — `'use client'`, props `{ user: User }`. Avatar
-  button (real Google `user_metadata.avatar_url` via `<Image>` w/h 36, else
-  initial-circle) → toggleable dropdown (`bg-card shadow-dialog`, name label +
-  `Log out` w/ `FiLogOut`). Closes on click-outside + Escape via one `useEffect`
-  that only attaches/detaches document listeners. `onSignOut`: client
-  `supabase.auth.signOut()` → `console.error`+`toast.error` on failure, else
-  `setOpen(false)` + `router.push('/')` + `router.refresh()`.
+- `supabase/migrations/20260612015610_catalog_schema_and_storage.sql` — one additive
+  migration. Creates `public.songs`, `public.playlists`, `public.playlist_songs`,
+  `public.liked_songs` with columns + RLS from `architecture.md`; FK indexes; and the
+  `songs` + `images` Storage buckets (`insert into storage.buckets ... public=true`)
+  with `storage.objects` policies (public read; owner insert/update/delete scoped to
+  `(storage.foldername(name))[1] = (select auth.uid())::text`). Matches the Feature 05
+  SQL style: `-- ====` / `-- ----` dividers, `(select auth.uid())` subselect wrapping,
+  plain `create table`. **`profiles` is NOT touched** (already exists from 05).
+  - songs RLS: SELECT (no `to` → all roles incl. anon) `using (is_public or own)`;
+    INSERT/UPDATE/DELETE `to authenticated`, owner-only. `song_path`/`image_path` are
+    **NOT NULL**.
+  - playlists: single `for all to authenticated` owner policy.
+  - playlist_songs: SELECT/UPDATE/DELETE gated on parent-playlist ownership via
+    `exists(...)`; INSERT additionally requires the song be visible (`is_public or own`).
+  - liked_songs: composite PK `(user_id, song_id)`; SELECT/DELETE owner-only; INSERT
+    requires `user_id = uid` AND song visible.
+- `src/types/database.types.ts` — generated from the live schema via Supabase MCP
+  `generate_typescript_types`.
 
 Modified:
-- `src/components/Header.tsx` — signed-in branch now renders `<UserMenu user={user}/>`
-  (replaced 04's minimal initial-circle); anon "Log in" pill unchanged.
-- `next.config.ts` — added `lh3.googleusercontent.com` (`pathname:'/**'`) to
-  `images.remotePatterns` (Google avatars).
-- `src/providers/UserProvider.tsx` — comment-only (sign-out now fires SIGNED_OUT).
-- `context/progress-tracker.md` — 05 checked off; Phase 2 complete; decisions logged.
+- `src/types/index.ts` — replaced the hand-written `interface Song` with aliases derived
+  from generated Row types: `Song`, `Playlist`, `PlaylistSong`, `LikedSong`, `Profile`
+  (`Database['public']['Tables'][...]['Row']`). `ActionResult` unchanged.
+- `context/progress-tracker.md` — 06 checked off; status → "Phase 3 in progress, 07 next";
+  full decision log appended.
 
-Approved plan: `/Users/siddarthvaidya/.claude/plans/shimmying-churning-waterfall.md`.
+Approved plan: `/Users/siddarthvaidya/.claude/plans/yes-changes-are-already-wiggly-clock.md`.
 
 ## Decisions made
 
-- **Auth surface = `Header`, NOT the sidebar** the build-plan §05 text names. Sidebar
-  is hidden below `md`, so a sidebar-only sign-out would strand mobile users. Kept
-  the 04 decision (avatar + dropdown in the Header, reachable at all breakpoints).
-- **Sign-out = lightweight custom dropdown, no new dependency.** Deliberately did
-  NOT add `@radix-ui/react-dropdown-menu`. Close-listener effect only attaches
-  listeners (state set in handlers) → does not trip React 19 `set-state-in-effect`.
-- **Sign-out is client-side** (`signOut()` only clears the cookie, not a DB write),
-  so the "all DB writes via Server Actions" invariant does not apply.
-- **Real Google avatar** read from the live `User` object (`user_metadata.avatar_url`),
-  **not** from a `profiles` query. `profiles` table is infrastructure for later.
-- **profiles RLS owner-only** (this project keeps profiles private, unlike the
-  public-read Supabase quickstart examples). Confirmed canonical trigger form via
-  Context7 `/supabase/supabase`.
-- **`requireUser()` shipped now, consumed later.** Features 08 (`/library`),
-  11 (`/liked`), 14 (`/playlist/[id]`) call it at the top of their Server Components.
+- **Storage buckets created IN the migration** (not the dashboard) so
+  `supabase/migrations/` stays the single source of truth (invariant). Buckets are
+  public-read = "unlisted" privacy only; object URLs are NOT access-controlled (per
+  architecture.md — `is_public` only hides private rows from the catalog via RLS).
+- **`songs.song_path` / `image_path` are NOT NULL** — every song needs audio + cover, and
+  this keeps the generated `Song` field types `string` (not `string | null`) so the
+  existing `MOCK_SONGS` + grid/card components type-check with zero changes.
+  `playlists.description` / `image_path` stay nullable.
+- **`Song` is now a generated-type alias**, not a hand-written interface. Regenerate
+  `database.types.ts` after every future migration.
+- **Applied via Supabase MCP this session** — MCP auth WAS available (unlike Feature 05's
+  dashboard fallback). `apply_migration` → `{"success":true}`.
+- Indexes added on FK columns (`songs.user_id`, `playlists.user_id`,
+  `playlist_songs.playlist_id`/`song_id`, `liked_songs.song_id`) — FK hygiene, silences
+  the Supabase unindexed-FK advisor.
 
 ## Problems solved
 
-- **Supabase MCP could not be used this session.** OAuth completed in-browser
-  ("authentication successful", callback `http://localhost:3118/callback?code=...`)
-  but the harness never surfaced the MCP's real tools (execute_sql/apply_migration)
-  into the tool registry — only the `authenticate`/`complete_authentication` stubs
-  stayed available, and `complete_authentication` said "no flow in progress" (the
-  local listener had already auto-captured it). **Fallback that worked: ran the
-  committed `.sql` in the Supabase Dashboard SQL Editor.** Next session the MCP tools
-  may have loaded — if not, use the dashboard again.
-- **Dev server must run on PORT 3000** for OAuth (`NEXT_PUBLIC_SITE_URL=http://localhost:3000`).
-  A second `npm run dev` collides → 3001 and bails. Background server was stopped at
-  end of session (no stray process left).
+- **Supabase MCP is usable this session** (project ref `vgsiwqrovctitxkruwpj`,
+  ACTIVE_HEALTHY). `list_projects`/`apply_migration`/`execute_sql`/`get_advisors`/
+  `generate_typescript_types` all worked. (Feature 05's session couldn't surface them — no
+  longer a blocker, but if a future session can't, the Dashboard SQL Editor fallback still
+  works since the `.sql` is committed.)
+- **`execute_sql` multi-statement returns only the LAST statement's result** — run
+  structural checks as single statements (or put the meaningful SELECT last).
+- **RLS role testing via `set role anon` works** inside a DO block for write-rejection
+  probes (confirmed anon insert into songs is blocked).
 
 ## Current state
 
-- **Feature 05 done + verified.** `npm run lint` + `npm run build` green (build still
-  prints `ƒ Proxy (Middleware)`). Headless: anon `/` → 200 with "Log in" in SSR;
-  `/library` & `/liked` → 307 → `/`. **User-confirmed live:** real Google avatar
-  renders; avatar → dropdown → `Log out` → back to `/` with "Log in" pill.
-- **Migration is APPLIED** to project ref **vgsiwqrovctitxkruwpj**. Post-apply check:
-  `profile_count = user_count = 1`, `policy_count = 2`, `trigger_exists = true`.
-- **Phase 2 (Authentication) complete.** Phase 1 + 2 done (features 01–05).
-- **All Feature-05 changes uncommitted** on `main`. Prior features were committed by
-  the user (latest commit `de67864 2.4-google-signin-oauth-flow`).
+- **Feature 06 done + verified.** `npm run lint` + `npm run build` green (build still prints
+  `ƒ Proxy (Middleware)`; `/` `ƒ (Dynamic)`).
+- **Migration APPLIED** to project `vgsiwqrovctitxkruwpj`. Verified: all 4 tables
+  `relrowsecurity=true` with policy counts songs 4 / playlist_songs 4 / liked_songs 3 /
+  playlists 1; `get_advisors` (security) shows **no warnings on the 4 new tables** (only
+  pre-existing lints: 05's `handle_new_user` SECURITY DEFINER RPC-exposure + Auth
+  leaked-password — neither from 06, both left as-is/out of scope); both buckets
+  `public=true`; anon insert into `songs` correctly rejected by RLS.
+- **Phases 1 + 2 + Feature 06 done.** Catalog is still **mock data** in the UI
+  (`src/app/(site)/page.tsx` `MOCK_SONGS`) — real reads are Feature 08, not 06.
+- **All Feature-06 changes uncommitted** on `main` (latest commit `3c9764f
+  2.5-action-gating-profiles-signout`).
 
 ## Next session starts with
 
-1. **Commit decision (UNANSWERED).** Proposed message per repo convention
-   (phase.feature): **`2.5-action-gating-profiles-signout`**. **Never add a co-author**
-   (global CLAUDE.md). Confirm whether to commit or the user will.
-2. Then **06 Database schema & storage** (Phase 3, first feature). Per CLAUDE.md read
-   `context/` first. Scope: ONE migration adding the full catalog —
-   `songs` (incl. `is_public`), `playlists`, `playlist_songs`, `liked_songs` with the
-   columns + RLS from `architecture.md` (songs SELECT = public-or-own; `liked_songs`
-   and `playlist_songs` INSERT additionally require the referenced song be visible);
-   create `songs` + `images` Storage buckets (public-read + owner-write); generate
-   `src/types/database.types.ts` and add domain aliases in `src/types/index.ts`
-   (already has `Song` + `ActionResult` — the generated types will supersede `Song`).
-   `profiles` already exists (05) — 06's migration is additive, don't recreate it.
+1. **Commit decision (UNANSWERED).** Proposed message per repo convention (phase.feature):
+   **`3.6-catalog-schema-and-storage`**. **Never add a co-author** (global CLAUDE.md).
+   Confirm whether to commit or the user will.
+2. Then **07 Upload song flow** (Phase 3). Per CLAUDE.md read `context/` first. Scope:
+   `UploadModal` (react-hook-form: title, author, audio file, image file, **public/private
+   toggle defaulting to public**, loading/disabled states); client uploads both files to
+   Storage under `<user_id>/<uuid>.<ext>` then calls a new **`createSong` Server Action**
+   (`src/actions/create-song.ts`) to insert the row — full pattern already written out in
+   `context/library-docs.md` → "Upload". On any post-upload failure the client deletes the
+   orphaned object(s). Validate file types against `ACCEPTED_AUDIO_TYPES`/
+   `ACCEPTED_IMAGE_TYPES` in `src/lib/constants.ts`; `toast` success/failure; `reset()` +
+   close + `router.refresh()` on success. Needs a `use-upload-modal` Zustand store and an
+   upload trigger (likely in the Library/Header). DB types + `Song` alias are ready.
 
 ## Open questions
 
-- Commit 05 now as `2.5-action-gating-profiles-signout`, or user commits himself?
-- For 06: apply via Supabase MCP (re-check if tools load) or Dashboard SQL Editor
-  again? And how to generate `database.types.ts` — Supabase CLI (`npx supabase gen
-  types`, needs link) vs MCP. Storage buckets can be created in the same SQL migration
-  (`insert into storage.buckets ...` + policies) or via dashboard.
+- Commit 06 now as `3.6-catalog-schema-and-storage`, or user commits himself?
+- For 07: where does the "upload" entry point live? Build-plan says Library, but `/library`
+  page doesn't exist yet (Feature 08/12 flesh it out). May need a minimal trigger now
+  (e.g. a "+" in the sidebar/Header) and full Library polish later. Decide at 07 start.
+- The cross-user visibility-gated INSERT (`liked_songs`/`playlist_songs` "song must be
+  visible") is validated structurally + via Context7 but NOT runtime-tested (needs a 2nd
+  real auth user + data + sessions). Real coverage lands in Features 08/11 — verify there.

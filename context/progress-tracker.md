@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 2 — Authentication (complete) → Phase 3 — Songs & Upload (next)
-**Last completed:** 05 Action gating, profiles & sign-out (built + verified: migration applied, backfill ✓, avatar + sign-out working)
-**Next:** 06 Database schema & storage
+**Phase:** Phase 3 — Songs & Upload (in progress)
+**Last completed:** 06 Database schema & storage (migration applied via Supabase MCP; RLS + buckets verified; `database.types.ts` generated; lint + build green)
+**Next:** 07 Upload song flow
 
 ---
 
@@ -29,7 +29,7 @@ immediately know what is done, what is in progress, and what is next.
 - [x] 05 Action gating, profiles & sign-out
 
 ### Phase 3 — Songs & Upload
-- [ ] 06 Database schema & storage
+- [x] 06 Database schema & storage
 - [ ] 07 Upload song flow
 - [ ] 08 Home & library wired to real songs
 
@@ -196,3 +196,34 @@ immediately know what is done, what is in progress, and what is next.
   `/library` & `/liked` → 307 → `/`. Live (user-confirmed): real Google avatar renders;
   avatar → dropdown → `Log out` → back to `/` with the "Log in" pill; re-sign-in shows no
   duplicate profile (trigger `on conflict do nothing`).
+- **06 — One additive migration** (`supabase/migrations/20260612015610_catalog_schema_and_storage.sql`)
+  creates `songs`, `playlists`, `playlist_songs`, `liked_songs` + RLS + FK indexes, and the
+  `songs`/`images` Storage buckets with policies. `profiles` untouched (already exists from 05).
+  Matches the 05 SQL style (`(select auth.uid())` subselect wrapping, section dividers).
+- **06 — Storage buckets created IN the migration** (`insert into storage.buckets ... public=true`
+  + `storage.objects` policies), not the dashboard, so `supabase/migrations/` stays the single
+  source of truth (invariant). Public-read = "unlisted" privacy only (object URLs aren't access-
+  controlled), per architecture.md — `is_public` hides private rows from the catalog via RLS.
+- **06 — `songs.song_path` / `image_path` are `NOT NULL`.** Every song needs audio + cover; this
+  also keeps the generated `Song` field types `string` (not `string | null`), so the existing
+  `MOCK_SONGS` + grid/card components type-check with zero changes. `playlists.description` /
+  `image_path` stay nullable.
+- **06 — `Song` is now a generated-type alias.** `src/types/index.ts` derives `Song`, `Playlist`,
+  `PlaylistSong`, `LikedSong`, `Profile` from `Database['public']['Tables'][...]['Row']` (new
+  `src/types/database.types.ts`); the hand-written `interface Song` was replaced. `ActionResult`
+  unchanged. `STORAGE_BUCKETS` / `ACCEPTED_*` in `lib/constants.ts` already existed, untouched.
+- **06 — Applied via Supabase MCP** (`apply_migration` → `{"success":true}`). MCP auth WAS
+  available this session (unlike 05's dashboard fallback). Types via MCP `generate_typescript_types`.
+- **06 — Verified:** MCP `get_advisors` (security) shows **no warnings on the 4 new tables**
+  (only pre-existing lints: the 05 `handle_new_user` SECURITY DEFINER RPC-exposure + Auth leaked-
+  password — neither introduced here). Structural: all 4 tables `relrowsecurity=true` with expected
+  policy counts (songs 4, playlist_songs 4, liked_songs 3, playlists 1). `set role anon` insert into
+  `songs` correctly **rejected** by RLS. Both buckets `public=true`. `npm run lint` + `npm run build`
+  green (build still prints `ƒ Proxy (Middleware)`; `/` `ƒ (Dynamic)`); no UI change.
+- **06 — Cross-user visibility-gated INSERT not yet runtime-tested.** The `liked_songs` /
+  `playlist_songs` "can only reference a visible song" `with check` needs a 2nd real auth user +
+  catalog data + live sessions to exercise; deliberately NOT faking a user in the prod `auth.users`.
+  Real coverage comes with Features 08/11. Policy SQL validated structurally + against Context7.
+- **06 — Must also run this migration against the production DB at deploy (Feature 16)** if a fresh
+  Supabase project is used — same caveat as the 05 migration. Pre-existing 05 advisory
+  (`handle_new_user` exposed as an RPC) is unrelated to 06 and left as-is (out of scope).
