@@ -1,4 +1,6 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { FiPlus } from 'react-icons/fi'
 import { requireUser } from '@/server/require-user'
 import { getPlaylistById } from '@/server/get-playlist'
 import { getPlaylistSongs } from '@/server/get-playlist-songs'
@@ -33,10 +35,19 @@ export default async function PlaylistPage({ params }: PlaylistPageProps) {
       </div>
 
       {tracks.length === 0 ? (
-        <p className="text-sm text-muted">
-          This playlist has no songs yet. Use the &ldquo;Add to playlist&rdquo; button on any song to
-          add one.
-        </p>
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            This playlist has no songs yet. Search the catalog and use the &ldquo;Add to
+            playlist&rdquo; button on any song to add one.
+          </p>
+          <Link
+            href="/search"
+            className="inline-flex items-center gap-2 rounded-full bg-text px-6 py-3 text-sm font-bold text-black transition hover:opacity-90"
+          >
+            <FiPlus className="h-4 w-4" />
+            Add songs
+          </Link>
+        </div>
       ) : (
         // Keyed by the server song-id order so add/remove/reorder remounts the list
         // with fresh props (and reseeds its optimistic local state) after a refresh.

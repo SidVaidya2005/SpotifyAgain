@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { FiEdit2, FiTrash2 } from 'react-icons/fi'
+import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi'
 import { toast } from 'sonner'
 import { usePlaylistModal } from '@/stores/use-playlist-modal'
 import { deletePlaylist } from '@/actions/delete-playlist'
@@ -43,6 +44,13 @@ export function PlaylistHeaderActions({ id, title }: PlaylistHeaderActionsProps)
   return (
     <>
       <div className="flex shrink-0 items-center gap-2">
+        <Link
+          href="/search"
+          aria-label="Add songs"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-accent"
+        >
+          <FiPlus className="h-5 w-5" />
+        </Link>
         <button
           type="button"
           aria-label="Rename playlist"

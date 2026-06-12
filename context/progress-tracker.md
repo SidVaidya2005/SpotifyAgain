@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 6 — Playlists **COMPLETE** (14 built, lint/build green, anon-gating headless-verified; **signed-in flow pending live user run**)
-**Last completed:** 14 Playlist tracks & detail page — `get-playlist-songs.ts` read (embed `playlist_songs → songs(*)` ordered by `position`), `add`/`remove`/`reorder-song`(`-from`)`-playlist` Server Actions, `use-add-to-playlist-modal` store, `AddToPlaylistModal` (lists user playlists, empty→create), `AddToPlaylistButton` (on `SongItem` + player bar; anon→AuthModal), and the drag-sortable `PlaylistTrackList`/`PlaylistTrackRow` (@dnd-kit) wired into `/playlist/[id]`. **One new approved dep: @dnd-kit** (core/sortable/modifiers/utilities) — `code-standards.md` approved-deps amended. No schema/migration (`playlist_songs` + RLS shipped in 06). Lint + build green (`/playlist/[id]` = `ƒ (Dynamic)`).
-**Next:** Phase 7 — 15 Search page
+**Phase:** Phase 7 — Search **COMPLETE** (15 built, lint/build green, headless-verified **+ LIVE-VERIFIED by user 2026-06-12** — "verified everything is working")
+**Last completed:** 15 Search page — `useDebounce` hook, `search-songs.ts` read (sanitized `.or(title.ilike,author.ilike)`, RLS-scoped), `SearchInput` (URL-driven `?q=` via `router.replace`), `/search` Server Component reusing `SongGrid` with prompt/no-results states. **Bundled the Feature-14 follow-up:** "Add songs" → `/search` link in the playlist header (`PlaylistHeaderActions`) + a white-pill CTA in the playlist empty state. No new dep, no migration.
+**Next:** Phase 8 — 16 Deploy to Render
 
 ---
 
@@ -46,7 +46,7 @@ immediately know what is done, what is in progress, and what is next.
 - [x] 14 Playlist tracks & detail page
 
 ### Phase 7 — Search
-- [ ] 15 Search page
+- [x] 15 Search page
 
 ### Phase 8 — Deployment
 - [ ] 16 Deploy to Render
@@ -488,3 +488,37 @@ immediately know what is done, what is in progress, and what is next.
   **drag to reorder** (must also work via **touch on iPad/phone** and **keyboard**) → order persists across refresh/nav; player-bar
   "Add to playlist". Cross-user negative paths (add/reorder another user's playlist) stay RLS-enforced but aren't single-account testable.
 - **14 — Phase 6 — Playlists now COMPLETE. Next: Phase 7 — Feature 15 Search page.**
+- **15 — New files (4):** `src/hooks/useDebounce.ts` (generic `useDebounce<T>(value, delay=300)` — setState lives in the
+  `setTimeout` callback, not the effect body, so it dodges React 19's `set-state-in-effect` rule that bit 04/05/09/13);
+  `src/server/search-songs.ts` (verbatim from `code-standards.md` → Boundary Patterns: sanitize `query.replace(/[,()*:"\\]/g,' ').replace(/[%_]/g,'\\$&').trim()`
+  → `.or(\`title.ilike.%${q}%,author.ilike.%${q}%\`)` → `Song[]`, RLS-scoped, log+`[]` on error);
+  `src/components/SearchInput.tsx` (`'use client'` pill input); `src/app/(site)/search/page.tsx` (async Server Component).
+  **Modified (2)** for the Feature-14 follow-up: `src/components/playlist/PlaylistHeaderActions.tsx` (+ "Add songs" circular
+  `<Link href="/search">` `FiPlus` icon, matching the existing rename/delete icon buttons) and
+  `src/app/(site)/playlist/[id]/page.tsx` (empty state → short copy + a white-pill `<Link href="/search">` "Add songs" CTA).
+  **No new dep, no migration** (search is a read over `songs`; RLS already permits public + own). `/architect` plan:
+  `~/.claude/plans/feature-15-search-page-drifting-sun.md`.
+- **15 — Data flow = URL-driven Server Component (USER-CHOSEN).** `SearchInput` keeps the typed value in local `useState`
+  (seeded once from an `initialQuery` **prop** — NOT `useSearchParams()`, which would force a Suspense boundary; later prop
+  changes intentionally don't clobber the user's typing since `useState` ignores subsequent initial values), debounces it
+  300ms, and `router.replace(\`/search?q=${encodeURIComponent(debounced)}\`)` (replace, not push → keystrokes stay out of
+  back-history). The page `await`s `searchParams` (async in Next 16), trims `q`, and runs `searchSongs` server-side. URLs are
+  shareable; `/search` is **NOT** in `proxy.ts` `protectedPaths`, so anon can search.
+- **15 — Results reuse `SongGrid` (USER-CHOSEN over a new row list).** `query===''` → prompt "Search for songs by title or
+  artist."; else `<SongGrid songs emptyMessage={\`No songs found for "${query}".\`} />`. SongGrid wires `useOnPlay(songs)` so
+  the play queue = the current results; like + add-to-playlist come free from `SongItem` (anon→AuthModal already built). No
+  Home/Liked/Library card changes. Nav needed **no change** — `Sidebar`/`BottomNav` already carry `/search` + `FiSearch`.
+- **15 — Feature-14 follow-up = empty state + header button (USER-CHOSEN).** Both are plain `<Link href="/search">` (no
+  playlist-id context threaded into search — the result's existing add-to-playlist modal lets the user pick any playlist).
+  Empty-state CTA uses the **white** pill look (matching the Library upload-CTA precedent) to keep accent green for playback.
+  This closes the deliberate Feature-14 gap (no in-page way to add songs from `/playlist/[id]`).
+- **15 — Verified static + headless + LIVE (user-confirmed 2026-06-12, "verified everything is working").** `npm run lint`
+  clean; `npm run build` green (`/search` = `ƒ (Dynamic)`; `ƒ Proxy (Middleware)` prints; TS passes, no `any`). Headless (prod
+  :3101, stopped): anon `/search` → 200 (not gated), `/library` control → 307; **sanitization smoke tests** `?q=` for `%` `(`
+  `,` `*` `\` `"` all → 200 (no 500, filter unbroken); empty query → prompt rendered; genuine no-match query → "No songs found
+  for"; **positive path** — searched a substring of a real Home title and the matching `SongItem` card rendered in the grid.
+  (Caveat: grepping raw HTML for the no-results string yields a false positive because `emptyMessage` is always serialized as a
+  `SongGrid` prop; the rendered result card is the reliable signal.) **Live run covered:** debounced typing → live URL+results,
+  clear→prompt, click result plays with queue=results + next/prev, like + add-to-playlist (anon→AuthModal), shared
+  `/search?q=foo` pre-fill, and the playlist "Add songs" (header + empty state) → `/search` → add-to-that-playlist flow.
+- **15 — Phase 7 — Search now COMPLETE (pending live verification). Next: Phase 8 — Feature 16 Deploy to Render.**
