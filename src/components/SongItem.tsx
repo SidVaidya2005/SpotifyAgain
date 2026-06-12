@@ -1,14 +1,47 @@
+'use client'
+
+import Image from 'next/image'
+import { FiPlay } from 'react-icons/fi'
+import { useLoadImage } from '@/hooks/useLoadImage'
 import type { Song } from '@/types'
 
 interface SongItemProps {
   song: Song
+  onClick: (id: string) => void
 }
 
-export function SongItem({ song }: SongItemProps) {
+export function SongItem({ song, onClick }: SongItemProps) {
+  const imageUrl = useLoadImage(song)
+
   return (
-    <div className="group cursor-pointer rounded-lg bg-card p-4 transition hover:bg-card-2">
-      {/* Cover placeholder */}
-      <div className="mb-4 aspect-square rounded bg-surface-2" />
+    <div
+      onClick={() => onClick(song.id)}
+      className="group relative cursor-pointer rounded-lg bg-card p-4 transition hover:bg-card-2"
+    >
+      {/* Cover */}
+      <div className="relative mb-4 aspect-square overflow-hidden rounded bg-surface-2">
+        {imageUrl && (
+          <Image
+            src={imageUrl}
+            alt={song.title}
+            fill
+            sizes="(max-width: 575px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
+            className="object-cover"
+          />
+        )}
+
+        {/* Hover Circular Play (DESIGN §4/§9) */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onClick(song.id)
+          }}
+          className="absolute bottom-2 right-2 flex h-12 w-12 translate-y-2 items-center justify-center rounded-full bg-accent text-black opacity-0 shadow-card transition hover:scale-105 hover:bg-accent-border group-hover:translate-y-0 group-hover:opacity-100"
+          aria-label={`Play ${song.title}`}
+        >
+          <FiPlay className="h-5 w-5 fill-current" />
+        </button>
+      </div>
 
       {/* Title */}
       <p className="truncate font-bold text-text">{song.title}</p>

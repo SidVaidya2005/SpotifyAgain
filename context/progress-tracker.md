@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 3 — Songs & Upload (complete) → Phase 4 — Playback (next)
-**Last completed:** 08 Home & library wired to real songs (real catalog reads replace MOCK_SONGS; new `/library` page; `SongGrid` extracted; lint + build green; populated grid + anon RLS visibility + library gating verified headlessly via a temp sentinel song)
-**Next:** 09 Persistent player
+**Phase:** Phase 4 — Playback (in progress)
+**Last completed:** 09 Persistent player — **fully verified (lint + build + headless + live browser run, user-confirmed).** Clicking a song sets the queue + active id and the bottom `PlayerBar` plays real Storage audio via `use-sound`; cover art wired in the grid + player; seek + volume + mute work; audio persists across navigation; anon can play public songs. Next/prev deliberately inert until Feature 10. (This live run also finally cleared the long-pending 07→08 round-trip.)
+**Next:** 10 Queue, next & previous
 
 ---
 
@@ -34,7 +34,7 @@ immediately know what is done, what is in progress, and what is next.
 - [x] 08 Home & library wired to real songs
 
 ### Phase 4 — Playback
-- [ ] 09 Persistent player
+- [x] 09 Persistent player
 - [ ] 10 Queue, next & previous
 
 ### Phase 5 — Library & Likes
@@ -289,3 +289,40 @@ immediately know what is done, what is in progress, and what is next.
   views — Home additionally showing the user's own private songs, `/library` listing the user's uploads —
   and the full 07→08 flow (upload via Header "+" → song appears on Home/Library immediately). Catalog is
   currently **empty** (0 songs); the Feature-07 test uploads were cleaned up at some point.
+- **09 — New files:** `src/stores/use-player.ts` (verbatim `architecture.md` shape: `ids`/`activeId` +
+  `setId`/`setIds`/`reset`), hooks `useOnPlay` / `useGetSongById` / `useLoadSongUrl` / `useLoadImage`,
+  and `src/components/player/{PlayerContent,SeekSlider,VolumeSlider}.tsx`. Rewrote
+  `player/PlayerBar.tsx` (orchestrator) and made `SongGrid.tsx` + `SongItem.tsx` client components.
+  No new deps, no migration, no `next.config.ts` / React Query change. (`/architect` plan:
+  `~/.claude/plans/feature-09-persistent-cozy-boole.md`.)
+- **09 — Store stays minimal; active song fetched, not stored.** Invariant forbids domain data in
+  Zustand, and the layout-mounted `PlayerBar` has no page data, so it resolves the active `Song` from
+  `activeId` via `useGetSongById` (browser client, RLS-scoped, plain `useEffect` — **React Query still
+  deferred to 11**). `isPlaying`/`position`/`volume` are **local** to `PlayerContent`. `PlayerContent`
+  is keyed by `songUrl` in `PlayerBar` so it remounts and `use-sound` reloads on track change; autoplay
+  via `sound?.play()` on the `[sound]` effect, `sound?.unload()` on cleanup. Verified `use-sound@5` +
+  Radix Slider APIs against Context7 first.
+- **09 — Cover art wired (USER-CHOSEN).** `useLoadImage` → `getPublicUrl(image_path)` rendered via
+  `<Image>` in both `SongItem` (grid) and `PlayerContent`. No `next.config.ts` change — the Supabase
+  Storage host (`/storage/v1/object/public/**`) was already whitelisted in 03/05.
+- **09 — Click model = hover Circular Play (USER-CHOSEN).** `SongGrid` is now a client component
+  computing `onPlay = useOnPlay(songs)` and passing `onClick:(id)=>void` to `SongItem` (the shape in
+  `code-standards.md` → Module Structure). The whole card is clickable **and** a green Circular Play
+  button (`bg-accent text-black`, DESIGN §4/§9) reveals on card hover (`stopPropagation` on the button).
+  No auth gate — anon may play public songs.
+- **09 — Next/prev + onend auto-advance deliberately deferred to Feature 10 (USER-CHOSEN "keep split").**
+  Prev/next buttons render for layout fidelity but have **no handler** (`TODO(Feature 10)` comments);
+  `onend` only stops (no auto-advance). Seek (live position via a 500ms `sound.seek()` poll) + volume
+  (`use-sound` reactive `volume` option) + mute toggle are functional now. Volume control is
+  `hidden md:flex` (touch widths use hardware volume).
+- **09 — Lint gotcha repeat:** React 19 `react-hooks/set-state-in-effect` flagged a *synchronous*
+  `setState` in `useGetSongById`'s `!id` early-return; fixed by moving **all** setState into the async
+  `run()` (deferred). Same rule bit 04/05.
+- **09 — Verified:** `npm run lint` clean; `npm run build` green (`/` + `/library` both `ƒ (Dynamic)`;
+  build still prints `ƒ Proxy (Middleware)`). Headless (dev on `PORT=3077`): anon `/` → 200 rendering the
+  **idle player** ("Nothing playing" / "Pick a song to start") + empty grid ("No songs yet.") with the
+  now-client `SongGrid`/`SongItem`/`PlayerBar` SSR-ing without hydration crash; anon `/library` → 307 → `/`.
+  **Live browser run user-confirmed working** ("verified everything working fine"): actual audio playback
+  (click → play, pause, seek, volume, mute), persistence across navigation, anon playback of a public
+  song, and cover art all function. This live run **also finally cleared the pending 07→08 round-trip**
+  (sign-in → upload → song appears → plays). Catalog now has real song(s) again.
