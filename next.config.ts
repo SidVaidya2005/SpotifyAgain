@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
         hostname: 'vgsiwqrovctitxkruwpj.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
+      {
+        // Google profile avatars (user_metadata.avatar_url) for the account menu.
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**',
+      },
     ],
   },
 };

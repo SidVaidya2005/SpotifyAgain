@@ -24,7 +24,8 @@ export function UserProvider({ initialUser, children }: UserProviderProps) {
 
   useEffect(() => {
     // Keep client state in sync with later auth events. OAuth sign-in completes
-    // via a full-page redirect; sign-out lands in Feature 05.
+    // via a full-page redirect; sign-out (UserMenu) fires SIGNED_OUT here, which
+    // clears the user — the Header then swaps back to the "Log in" pill.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {

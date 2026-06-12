@@ -11,9 +11,9 @@ immediately know what is done, what is in progress, and what is next.
 
 ## Current Status
 
-**Phase:** Phase 2 — Authentication (in progress)
-**Last completed:** 04 Google sign-in (built + verified end-to-end; live OAuth round-trip working)
-**Next:** 05 Action gating, profiles & sign-out
+**Phase:** Phase 2 — Authentication (complete) → Phase 3 — Songs & Upload (next)
+**Last completed:** 05 Action gating, profiles & sign-out (built + verified: migration applied, backfill ✓, avatar + sign-out working)
+**Next:** 06 Database schema & storage
 
 ---
 
@@ -26,7 +26,7 @@ immediately know what is done, what is in progress, and what is next.
 
 ### Phase 2 — Authentication
 - [x] 04 Google sign-in
-- [ ] 05 Action gating, profiles & sign-out
+- [x] 05 Action gating, profiles & sign-out
 
 ### Phase 3 — Songs & Upload
 - [ ] 06 Database schema & storage
@@ -156,3 +156,43 @@ immediately know what is done, what is in progress, and what is next.
   Google Cloud OAuth client. Modal → Google consent → `/auth/callback` → back to `next`
   works; Header shows the signed-in initial-circle. (Dashboard/Google Cloud config is
   external, not in the repo — must be repeated for the Render URL at deploy, Feature 16.)
+- **05 — Auth surface stayed in the `Header`, not the sidebar.** Build-plan §05 text
+  says "Sidebar shows avatar + sign-out," but the sidebar is hidden below `md`, so a
+  sidebar-only control would strand mobile users. Kept the 04 decision: avatar + account
+  dropdown live in the top `Header` (reachable at every breakpoint). New `UserMenu`
+  replaces 04's minimal initial-circle.
+- **05 — Sign-out = lightweight custom dropdown, no new dep.** Avatar button toggles a
+  small menu (name label + `Log out`), closes on click-outside / Escape. Avoided adding
+  `@radix-ui/react-dropdown-menu`. The close-listener `useEffect` only attaches/detaches
+  document listeners (state set inside handlers) so it doesn't trip React 19's
+  `set-state-in-effect` rule (same gotcha noted in 04). Sign-out is **client-side**
+  (`supabase.auth.signOut()` → `router.push('/')` + `router.refresh()`); it only clears
+  the session cookie, so the "DB writes go through Server Actions" invariant doesn't apply.
+- **05 — Real Google avatar now rendered.** `UserMenu` shows `user_metadata.avatar_url`
+  via `<Image>` (initial-circle fallback when absent). Added `lh3.googleusercontent.com`
+  to `next.config.ts` `images.remotePatterns` (`/**`). The Header avatar reads the live
+  `User` object — it does **not** query the `profiles` table.
+- **05 — `profiles` table + RLS + `handle_new_user` trigger** via
+  `supabase/migrations/20260611202834_profiles_and_handle_new_user.sql`. Owner-only
+  SELECT/UPDATE (`(select auth.uid()) = id`); **no INSERT policy** — the only writer is
+  the `security definer`, `search_path = ''` trigger (fully-qualified tables,
+  `on conflict do nothing`). Migration includes an **idempotent backfill** of existing
+  `auth.users` (the Feature-04 user predated the trigger). Confirmed the canonical trigger
+  form via Context7 (`/supabase/supabase`).
+- **05 — Migration applied via the Supabase Dashboard SQL Editor**, not the MCP. The
+  MCP OAuth completed in-browser ("authentication successful") but the harness didn't
+  surface its real tools into the tool registry this session, so we ran the committed
+  `.sql` in the dashboard instead. The `.sql` in `supabase/migrations/` remains the source
+  of truth. Verified post-apply: `profile_count = user_count = 1`, `policy_count = 2`,
+  `trigger_exists = true`. **Must also be run against the production DB at deploy if a
+  fresh project is used (Feature 16).**
+- **05 — `requireUser()` guard added but not yet consumed.** `src/server/require-user.ts`
+  (`getUser()` → `redirect('/')` when null) codifies the "personal-page Server Component
+  redirects when signed out" pattern. No personal page exists yet, so nothing imports it
+  in 05 (verified by build, not runtime); Features 08 (`/library`), 11 (`/liked`), 14
+  (`/playlist/[id]`) should call it at the top of their Server Components.
+- **05 — Verified:** `npm run lint` + `npm run build` green (build still prints
+  `ƒ Proxy (Middleware)`). Headless: anon `/` → 200 with "Log in" in SSR HTML;
+  `/library` & `/liked` → 307 → `/`. Live (user-confirmed): real Google avatar renders;
+  avatar → dropdown → `Log out` → back to `/` with the "Log in" pill; re-sign-in shows no
+  duplicate profile (trigger `on conflict do nothing`).
