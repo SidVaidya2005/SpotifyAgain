@@ -1,114 +1,83 @@
-# Memory — Feature 15 Search Page
+# Memory — Feature 16 Deploy to Render (PROJECT COMPLETE)
 
 Last updated: 2026-06-12
 
 ## What was built
 
-Feature 15 (Phase 7, Search) — **built + `npm run lint`/`npm run build` GREEN +
-headless-verified + LIVE-VERIFIED by the user ("i verified everything is working").**
-This **completes Phase 7.** Next (and last) is **Phase 8 — Feature 16 (Deploy to Render).**
+**Feature 16 (Phase 8, Deploy to Render) — DONE + LIVE + user-verified ("everything
+working fine"). This completes the entire build plan: 16/16 features.** The app is
+live at **https://spotifyagain.onrender.com** (Render Node Web Service, free plan).
 
-**Feature 15 is UNCOMMITTED on `main`.** HEAD at session start AND now is
-`dc57260 6.14-playlist-tracks-detail-page` (so 14 is committed; 15 is not). Run
-`git status` / `git log --oneline -3` before committing. I offered to commit as
-`6.15-search-page` (**NO co-author** — global CLAUDE.md rule); user hasn't said go yet,
-and hasn't said `main`-direct vs branch.
+Committed + pushed to `origin/main`:
+- `26f097e 6.16-deploy-to-render` — in-repo deploy artifacts:
+  - `.nvmrc` = `22` and `package.json` `engines.node >=20.9.0` (pin Render's Node;
+    local is Node 26).
+  - `render.yaml` blueprint (runtime node, branch main, build `npm install && npm run
+    build`, start `npm run start`, the 3 `NEXT_PUBLIC_*` envVars as `sync:false` so
+    values stay in the dashboard). Free plan note: cold-start ~50s after idle.
+- `5c9f23e fix(auth): redirect OAuth callback to NEXT_PUBLIC_SITE_URL` — the prod OAuth fix
+  (see Problems solved). Touched `src/app/auth/callback/route.ts` + `context/code-standards.md`.
 
-**No new dependency, no migration** — search is a read over the existing `songs` table;
-RLS already permits public + own.
-
-New files (4):
-- `src/hooks/useDebounce.ts` — generic `useDebounce<T>(value, delay=300)`. setState is
-  inside the `setTimeout` callback (a timer), NOT the effect body → dodges React 19's
-  `react-hooks/set-state-in-effect` rule (bit 04/05/09/13). Cleanup `clearTimeout`.
-- `src/server/search-songs.ts` — VERBATIM from `code-standards.md` → Boundary Patterns.
-  Sanitize: `query.replace(/[,()*:"\\]/g,' ').replace(/[%_]/g,'\\$&').trim()`; `if(!q) return []`;
-  `.or(\`title.ilike.%${q}%,author.ilike.%${q}%\`).order('created_at',{ascending:false})`;
-  log `[searchSongs]` + return `[]` on error. Server client, RLS-scoped (public + own).
-- `src/components/SearchInput.tsx` (`'use client'`) — pill input. Local `useState` seeded
-  from an `initialQuery` **prop** (NOT `useSearchParams()` — avoids its Suspense boundary;
-  later prop changes don't clobber typing since useState ignores subsequent initial values).
-  `useDebounce(value,300)` → effect `router.replace(debounced ? \`/search?q=${encodeURIComponent(debounced)}\` : '/search')`
-  (replace, not push; no setState in the effect → rule-safe). Styling DESIGN §4 Inputs:
-  `rounded-full bg-surface-2 text-text placeholder:text-muted shadow-inset-border focus:outline-none`,
-  left-padded for an absolute `FiSearch` icon. `max-w-md`.
-- `src/app/(site)/search/page.tsx` — async Server Component, PUBLIC (no `requireUser()`;
-  `/search` is NOT in `proxy.ts` protectedPaths). `searchParams: Promise<{q?:string}>` →
-  `const {q}=await searchParams` (async in Next 16) → `query=q?.trim()??''` →
-  `songs = query ? await searchSongs(query) : []`. Renders `<h1>Search</h1>` + `<SearchInput
-  initialQuery={query}/>`, then `query===''` → prompt "Search for songs by title or artist.",
-  else `<SongGrid songs emptyMessage={\`No songs found for "${query}".\`}/>`.
-
-Modified (2) — Feature-14 follow-up (close the "no in-page add-songs on /playlist/[id]" gap):
-- `src/components/playlist/PlaylistHeaderActions.tsx` — added an "Add songs" circular
-  `<Link href="/search" aria-label="Add songs">` (`FiPlus`) before the rename/delete icon
-  buttons, matching their style (`h-11 w-11 rounded-full bg-surface-2 ... hover:text-accent`).
-- `src/app/(site)/playlist/[id]/page.tsx` — empty state now: short copy + a **white-pill**
-  `<Link href="/search">` "Add songs" CTA (`bg-text text-black`, matching the Library
-  upload-CTA precedent — keeps accent green for playback).
-
-`/architect` plan: `~/.claude/plans/feature-15-search-page-drifting-sun.md`.
-Progress tracker updated (Phase 7 COMPLETE + live-verified note for 15).
+**UNCOMMITTED (user declined the auto-commit):** `context/progress-tracker.md` (Feature 16
+ticked complete + decisions appended) and this `memory.md`. I tried to commit them as
+`docs: mark Feature 16 complete …` and the user **rejected** the commit — so the docs are
+staged-but-not-committed in the working tree. Next session: ask how they want these handled
+(commit themselves / different message / leave as-is) rather than auto-committing. NO co-author
+on any commit (global CLAUDE.md rule).
 
 ## Decisions made
 
-- **3 /architect decisions (USER-CHOSEN):** (1) **URL-driven Server Component** data flow
-  (debounced `?q=` → server read) over client React Query; (2) **reuse `SongGrid`** (cards)
-  over a new vertical row list; (3) Feature-14 follow-up = **empty state + header button**
-  (both plain `<Link>` to `/search`; NO playlist-id context threaded into search — the
-  result's existing add-to-playlist modal lets the user pick any playlist).
-- **Param name = `q`** (searches title+author, so `q` > `title`). **Debounce = 300ms.**
-- Nav needed **no change** — `Sidebar`/`BottomNav` already carried `/search` + `FiSearch`.
-- Results playable + like + add-to-playlist come free from existing `SongItem` (anon→AuthModal).
+- **Reused the existing Supabase project `vgsiwqrovctitxkruwpj` for prod (USER-CHOSEN).**
+  → no migration re-run, no bucket recreation, no Google Cloud OAuth change, and
+  `next.config.ts` image host already matched. Only Supabase Auth URL config needed the
+  Render origin added.
+- **`NEXT_PUBLIC_SITE_URL` is build-time inlined** (read only in `AuthModal.tsx`). On Render it
+  must be set to `https://spotifyagain.onrender.com` (NO trailing slash) AND the service
+  rebuilt — a restart won't re-bake a `NEXT_PUBLIC_*` var.
+- Skipped `/architect` for deploy (mostly external dashboard work); committed deploy artifacts
+  directly to `main` (matching prior features). **But the user prefers to control the docs/
+  completion commit themselves — don't auto-commit docs without asking.**
 
 ## Problems solved
 
-- **React 19 `set-state-in-effect`** avoided two ways: the `useDebounce` setState sits in the
-  `setTimeout` callback (not the effect body), and `SearchInput`'s URL-sync effect calls only
-  `router.replace` (no setState).
-- **`useSearchParams()` Suspense requirement** sidestepped by passing `initialQuery` as a prop
-  from the server page instead of reading the hook in the client input.
-- **Headless no-results false positive:** grepping raw HTML for "No songs found for" matches
-  even when results render, because `emptyMessage` is always serialized as a `SongGrid` prop.
-  The reliable signal is the rendered `SongItem` card (`class="truncate font-bold text-text">`).
+- **PROD-ONLY OAuth redirect bug (the big one).** Sign-in completed but redirected to
+  `https://localhost:10000`. **Root cause:** the callback used `new URL(request.url).origin`;
+  behind Render's reverse proxy `request.url` carries the INTERNAL bind host (`localhost:10000`
+  = Render's default `PORT`), so the post-exchange redirect went there. Auth itself never failed
+  — the client's `redirectTo` was always correctly baked to the onrender origin; only the final
+  hop used the wrong origin. **Fix:** `const base = process.env.NEXT_PUBLIC_SITE_URL ?? origin`,
+  applied to all 3 redirects in `src/app/auth/callback/route.ts`. Documented the gotcha in
+  `code-standards.md` (callback snippet + a "never redirect to `request.url` origin in a proxied
+  deploy" rule). Server-side change → just needs redeploy, NOT a NEXT_PUBLIC rebuild.
+- **Verifying the SITE_URL bake headlessly:** grepped the served `/_next/static/chunks/*.js` for
+  `spotifyagain.onrender.com` — confirmed it was inlined (so OAuth `redirectTo` was correct).
 
 ## Current state
 
-- **Feature 15 done — lint clean, build green, headless + LIVE-verified by user.** Build:
-  `/`, `/library`, `/liked`, `/playlist/[id]`, **`/search`** all `ƒ (Dynamic)`; `ƒ Proxy
-  (Middleware)` prints; TS passes, no `any`.
-- Headless (prod :3101, stopped): anon `/search` → 200 (not gated), `/library` control → 307;
-  sanitization `?q=` for `% ( , * \ "` all → 200 (no 500); empty→prompt; no-match→message;
-  positive path rendered a matching card.
-- Phases 1–7 now COMPLETE. Only Phase 8 (Deploy) remains.
-- **A dev server was started by the USER this session** via `npm run dev` (background id
-  `bzv7famp3`, default :3000) — may still be running.
-- Supabase MCP available (project ref `vgsiwqrovctitxkruwpj`). Context7 + Supabase MCP usable.
+- **Live + fully working at https://spotifyagain.onrender.com.** User confirmed anon browse/play,
+  Google sign-in (post-fix), upload, like, playlist create/add/reorder/play, and responsive all work.
+- Headless prod checks (curl) green: `/` 200 (renders the public song → prod env vars + server read OK),
+  `/search` 200 (public), `/library` `/liked` `/playlist/[id]` → 307 → `/` (proxy gating live).
+- `main` is at `5c9f23e` (pushed). Working tree has the **uncommitted** progress-tracker + memory
+  updates (the user declined committing them).
+- Supabase MCP available (project `vgsiwqrovctitxkruwpj`). Context7 available.
 
 ## Next session starts with
 
-1. **Commit Feature 15** (live-verified) — `6.15-search-page`. **NEVER add a co-author**
-   (global CLAUDE.md). Confirm `main`-direct vs branch first. Working tree currently has the
-   4 new files + 2 modified (PlaylistHeaderActions, playlist page) + `context/progress-tracker.md`
-   + `memory.md` uncommitted.
-2. **Phase 8 — Feature 16: Deploy to Render** (FINAL feature). Per `build-plan.md` §16 +
-   `architecture.md` → Deployment: Render **Node Web Service**, build `npm install && npm run
-   build`, start `npm run start`, binds to `PORT`. Set prod env vars in Render
-   (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` = Render
-   URL). Add the Render URL to **Supabase Auth** Site/Redirect URLs + the Google Cloud OAuth
-   client (external dashboards — user must do these). If a FRESH Supabase project is used, the
-   05 + 06 migrations must be run against prod. Seed a few **public** demo songs. Optionally
-   commit a `render.yaml`. User has been running `/architect` before each feature.
+1. **Ask the user how to handle the uncommitted docs** (`context/progress-tracker.md` + `memory.md`) —
+   they declined an auto-commit this session. Don't commit without their go-ahead.
+2. **The build plan is DONE (16/16).** Anything further is out-of-scope of `build-plan.md`. Candidate
+   polish if asked:
+   - **Seed 3–6 public demo songs** (catalog has only **1** public song — thin for a recruiter's first
+     impression). Must be uploaded via the app's upload flow (audio+cover → Storage); NOT MCP-seedable.
+   - Optional: bump Render free → Starter to kill the ~50s cold start.
+   - Optional: a README polish / project write-up for the portfolio.
 
 ## Open questions
 
-- Commit Feature 15 now (`6.15-…`), directly to `main` or on a branch?
-- Deploy target details for 16: reuse the EXISTING Supabase project (`vgsiwqrovctitxkruwpj`)
-  for prod or spin up a fresh one (fresh → must re-run the 05 + 06 migrations + recreate
-  buckets)? Render account/repo connection is external (user-driven).
-- Cross-user negative paths still NOT runtime-tested (need a 2nd real auth user): visibility-
-  gated INSERTs (liked/playlist_songs), reorder/remove on a non-owned playlist, `/playlist/[id]`
-  + (now) cross-user search visibility. RLS validated structurally in 06; single-account only.
-- Home "owner sees own private songs" deviation still stands (accepted Feature 08). Note: a
-  signed-in user's **private** songs are also searchable by them on `/search` (same RLS), which
-  is correct/expected.
+- **How does the user want the completion docs committed?** (declined the auto-commit — pending.)
+- Still untested (needs a 2nd real auth user, not single-account testable): cross-user negative RLS
+  paths — visibility-gated INSERTs on `liked_songs`/`playlist_songs`, reorder/remove on a non-owned
+  playlist, cross-user `/playlist/[id]` + search visibility. All validated structurally in Feature 06.
+- Accepted deviation still stands (Feature 08): a signed-in user sees their own private songs on Home
+  and in their own `/search` results (same RLS) — correct/expected, not a leak to other users.
