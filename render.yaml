@@ -1,0 +1,25 @@
+# Render blueprint for SpotifyAgain — a Node Web Service running Next.js 16.
+# Optional: you can also create the service manually in the dashboard with the
+# same build/start commands. Either way, env-var *values* are set in the Render
+# dashboard, never committed here (sync: false).
+#
+# Node version comes from .nvmrc (22). next start binds to the PORT Render injects.
+services:
+  - type: web
+    name: spotifyagain
+    runtime: node
+    plan: free            # free spins down on inactivity (cold start ~50s); bump to starter to keep warm
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      # Public Supabase keys (RLS protects the data; safe to ship to the browser).
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      # IMPORTANT: build-time inlined (drives the Google OAuth redirectTo). Set this
+      # to the assigned https://<name>.onrender.com URL, then trigger a fresh build —
+      # a restart alone will NOT re-bake it.
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
