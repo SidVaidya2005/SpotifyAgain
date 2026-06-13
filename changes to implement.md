@@ -26,7 +26,7 @@
 | 2 | Search default content | **Recently-added songs** via `getSongs()` (real data, no schema change) — ✅ **built 2026-06-13** |
 | 3 | Tooltips | **`@radix-ui/react-tooltip`**, broad scope (all icon-only controls) — ✅ **built 2026-06-13** |
 | 4 | UI modernization scope | **Evolve the design system first** — update `DESIGN-spotify.md`, then implement to match |
-| 5 | "Remix" button | **Replace with "More like this" by author**; ship Shuffle alongside |
+| 5 | "Remix" button | **Replace with "More like this" by author** + Shuffle — ✅ **built 2026-06-13** (⏳ live verify pending) |
 
 ## Portfolio URLs (provided — verified 2026-06-13)
 
@@ -169,31 +169,44 @@ matches the doc. This is the largest area — sequence it after the quick wins.
 
 ---
 
-## 5. Enhance the play bar
+## 5. Enhance the play bar ✅ BUILT (2026-06-13) — ⏳ live verification pending
 
-**Decision:** add **Shuffle**, and replace the undefined **"Remix"** with **"More like
-this"** (queue other songs by the current track's author). Algorithmic radio/recs stay
-out of scope; author-based queueing uses real data.
+**Built on branch `post-v1-enhancements`** (not yet committed). `npm run lint` +
+`npx tsc --noEmit` clean. **Live behaviour not yet checked** — owner to verify later (see
+"Verify later" below). No new dependency.
 
-**Plan — Shuffle**
-- [ ] Extend `src/stores/use-player.ts` with shuffle state (`isShuffled` + keep the
-      original order so it can be restored) — still ephemeral player state, allowed.
-- [ ] Shuffle button in `PlayerContent.tsx` controls cluster; next/prev walk the
-      shuffled order; toggling off restores the launched-from order.
-- [ ] Active styling = accent green (functional highlight, allowed by DESIGN §7).
+**Decision:** add **Shuffle** (a **persistent global toggle** — owner-chosen) and replace
+the undefined **"Remix"** with **"More like this"** (queue other songs by the current
+track's author). Algorithmic radio/recs stay out of scope; author-based queueing uses real data.
 
-**Plan — "More like this"**
-- [ ] New read `src/server/get-songs-by-author.ts` (or a browser-client hook) —
-      RLS-scoped (public + own), excludes the current track.
-- [ ] Button appends those songs to the queue after the current track (`setIds`).
-      Toast if none found.
-- [ ] Tooltip (#3) labels both buttons.
+**What was built**
+- [x] `src/stores/use-player.ts` — added `isShuffled` + `originalOrder` and actions
+      `toggleShuffle` / `addToQueueAfterActive`; `setIds` reshuffles a newly-launched list
+      when shuffle is on (persistent toggle); `reset` clears the new fields. Pure
+      module-scope `shuffle` (Fisher–Yates) + `insertAfterActive` helpers; no Supabase.
+- [x] `src/hooks/useMoreLikeThis.ts` — NEW browser-client hook: RLS-scoped read of
+      same-author songs (excludes current), enqueues them after the current track via
+      `addToQueueAfterActive`, toasts success / "No other songs by X." (Used a browser-client
+      hook — **not** `src/server/get-songs-by-author.ts` — since server reads can't be
+      imported into the client player.)
+- [x] `src/components/player/PlayerContent.tsx` — **Shuffle** button (`FiShuffle`, leftmost
+      in transport, `text-accent` when on, `aria-pressed`) + **More like this** button
+      (`FiRadio`, left cluster, `hidden sm:flex`); both wrapped in the #3 `Tooltip`.
+      `useOnPlay` unchanged (reshuffle lives in `setIds`).
+
+**Verify later** (live/interactive — not curl-able):
+- [ ] Shuffle (need ≥2 queued songs): toggle on → icon turns accent green, current track
+      keeps playing, next traverses a random order; toggle off → next follows original order.
+- [ ] With shuffle on, play a different list → it reshuffles and shuffle stays on.
+- [ ] "More like this" → same-author songs enqueue after the current track + toast; thin
+      catalog → "No other songs by X."; works signed out.
+- [ ] Tooltips show on both new buttons.
 
 **Tradeoffs / notes**
-- "More like this" by author is intentionally simple/honest — no fake ML. If the
-  catalog is thin (currently ~1 public song) it may find nothing; the empty toast
-  handles that. Seeding more demo songs (see progress-tracker out-of-scope list) makes
-  both shuffle and this feature demo better.
+- "More like this" by author is intentionally simple/honest — no fake ML. Catalog is thin
+  (~1–2 public songs) so it may find nothing and shuffle needs ≥2 songs to observe — seeding
+  a few same-author demo songs makes both demo properly.
+- Follow-up: `/imprint` the player (record the shuffle-active accent usage).
 
 ---
 
@@ -202,9 +215,8 @@ out of scope; author-based queueing uses real data.
 1. ~~**#1 Portfolio links**~~ — ✅ **done (2026-06-13)**.
 2. ~~**#2 Search default**~~ — ✅ **done (2026-06-13)**.
 3. ~~**#3 Tooltips**~~ — ✅ **done (2026-06-13)**.
-4. **#5 Play bar** (shuffle + more-like-this) — medium. ← **next**
-5. **#4 UI modernization** — largest; design-doc update → implement. Sequenced last
-   so the smaller tweaks don't get reworked.
+4. ~~**#5 Play bar**~~ — ✅ **built (2026-06-13)** · ⏳ live verify pending.
+5. **#4 UI modernization** — largest; design-doc update → implement. ← **next**
 
 > Each numbered area should be built **one fully before the next** (code-standards), and
 > `progress-tracker.md` updated as they complete. None of these are committed yet — the

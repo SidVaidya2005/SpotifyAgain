@@ -1,94 +1,95 @@
-# Memory — Post-v1 Enhancements (#1–#3 done; #5 play bar next)
+# Memory — Post-v1 Enhancements (#1–#3 done; #5 built+pending-verify; #4 next)
 
 Last updated: 2026-06-13
 
 ## What was built
 
 v1 (16/16) was complete + live before this work. This is the **post-v1 enhancement
-backlog** on branch **`post-v1-enhancements`** (off `main`; nothing committed yet — owner
-controls commits). 3 of 5 areas shipped: #1, #2, #3. Remaining: #5 (next), #4 (last).
+backlog** on branch **`post-v1-enhancements`** (off `main`; **nothing committed yet** —
+owner controls commits). 4 of 5 areas built; only #4 remains.
 
-- **`changes to implement.md`** — backlog spec, 5 areas (#6 docs removed). #1/#2/#3
-  retitled "✅ DONE" with what-was-built checklists; §0 table + build order current.
-- **`ui-registry.md`** — created (first `/imprint`); has the `PortfolioLinks` entry + the
-  app-shell clearance rule. **Tooltip NOT yet imprinted** (follow-up).
-- **#1 Portfolio links (DONE):** `src/lib/constants.ts` `PORTFOLIO_LINKS`;
-  `src/components/PortfolioLinks.tsx` (NEW, plain component, `variant: 'full'|'compact'`);
-  footer in `Sidebar.tsx` (+`pb-24` bug fix); mobile `md:hidden` footer in `layout.tsx`.
-- **#2 Search default (DONE):** `src/app/(site)/search/page.tsx` only — empty query renders
-  a "Recently added" `<SongGrid>` from `(await getSongs()).slice(0,12)`; results branch
-  untouched.
-- **#3 Tooltips (DONE):**
-  - Added `@radix-ui/react-tooltip` (`^1.2.9`) + to `code-standards.md` approved-deps.
-  - `src/components/Tooltip.tsx` — reusable `<Tooltip content="…">{trigger}</Tooltip>`
-    (Radix `Trigger asChild`), token-styled (`bg-surface-2`/`text-xs`/`text-text`/
-    `shadow-dialog`), optional `side` + `className`.
-  - `src/providers/TooltipProvider.tsx` — single root `Tooltip.Provider` (`delayDuration=300`),
-    mounted in `layout.tsx` wrapping the shell + player + modals.
-  - Wrapped icon-only controls in 8 files: `Header` (upload, create-playlist),
-    `player/PlayerContent` (prev/play↔pause/next/mute↔unmute, dynamic labels), `LikeButton`,
-    `AddToPlaylistButton`, `playlist/PlaylistHeaderActions` (add-songs/rename/delete),
-    `PlaylistList` (+), `Sidebar` nav (`lg:hidden` + `side="right"`, rail-only), `Modal` (close X).
-    Skipped `BottomNav` (touch) + `UserMenu`. All `aria-label`s kept.
+- **`changes to implement.md`** — backlog spec (5 areas; #6 docs removed). #1/#2/#3 "✅ DONE",
+  #5 "✅ BUILT — ⏳ live verify pending" (with a "Verify later" checklist), §0 table + build
+  order current. #4 marked "← next".
+- **`ui-registry.md`** — has `PortfolioLinks` entry + the app-shell `pb-24` clearance rule.
+  **Tooltip + player NOT yet imprinted** (follow-up).
+- **#1 Portfolio links (DONE):** `PORTFOLIO_LINKS` in `src/lib/constants.ts`;
+  `src/components/PortfolioLinks.tsx` (NEW, `variant: 'full'|'compact'`); footer in
+  `Sidebar.tsx` (+`pb-24` fix); mobile `md:hidden` footer in `layout.tsx`.
+- **#2 Search default (DONE):** `src/app/(site)/search/page.tsx` — empty query renders
+  "Recently added" `<SongGrid>` from `(await getSongs()).slice(0,12)`.
+- **#3 Tooltips (DONE):** dep `@radix-ui/react-tooltip` (`^1.2.9`) + approved-deps;
+  `src/components/Tooltip.tsx` (reusable, `Trigger asChild`, token-styled);
+  `src/providers/TooltipProvider.tsx` (root, mounted in `layout.tsx`); wrapped icon-only
+  controls in 8 files (Header, PlayerContent transport, LikeButton, AddToPlaylistButton,
+  PlaylistHeaderActions, PlaylistList, Sidebar md-rail nav `lg:hidden`, Modal close).
+- **#5 Play bar (BUILT — lint+tsc clean, NOT live-verified):**
+  - `src/stores/use-player.ts` — added `isShuffled` + `originalOrder`; actions
+    `toggleShuffle` + `addToQueueAfterActive`; `setIds` reshuffles new list when shuffle on
+    (persistent toggle); `reset` clears new fields. Pure `shuffle` (Fisher–Yates) +
+    `insertAfterActive` module helpers. No Supabase (invariant kept).
+  - `src/hooks/useMoreLikeThis.ts` — NEW browser-client hook: same-author RLS-scoped read
+    (excludes current), enqueue-after-active, toast success / "No other songs by X."
+  - `src/components/player/PlayerContent.tsx` — Shuffle button (`FiShuffle`, leftmost
+    transport, `text-accent` when on) + More-like-this (`FiRadio`, left cluster
+    `hidden sm:flex`); both in `<Tooltip>`. `useOnPlay` unchanged.
 
 ## Decisions made
 
-- **Backlog order:** #1✅ → #2✅ → #3✅ → **#5 play bar (next)** → #4 UI modernization (last).
-- **#5 (locked):** Shuffle + "More like this" (append same-author songs to queue); "Remix"
-  dropped. Shuffle = extend `src/stores/use-player.ts` with `isShuffled` + keep original
-  order to restore; button in `PlayerContent` controls cluster; active = accent green
-  (functional, DESIGN §7 OK). "More like this" = new `src/server/get-songs-by-author.ts`
-  (RLS-scoped, exclude current track) → append via `setIds`, toast if none. Both reuse the
-  #3 `Tooltip`. Catalog is thin (~1 public song) so it may find nothing — empty toast handles it.
-- **#4 (locked):** EVOLVE `DESIGN-spotify.md` FIRST (sticky header + centered search bar +
-  visual hierarchy), then implement. Only sanctioned change to the design doc. Largest; last.
-- **#3 tooltips:** Radix dep (owner-approved) + broad scope (all icon-only). Wrapped INSIDE
-  shared button components (LikeButton/AddToPlaylistButton) so all usages inherit.
-- **#1:** sidebar footer (md+) + mobile **content** footer (<md, NOT header). **#2:** reuse
-  `getSongs()` (Home-consistent, public + own private); cap 12 via `.slice()`, NOT `.limit()`
-  on getSongs (Home shares it).
+- **#5 shuffle = persistent global toggle (owner-chosen):** reshuffle-on-new-list lives in
+  `usePlayer.setIds` (all play-launches route through it), so `useOnPlay` didn't change.
+  Current track never reloads on toggle (next/prev use `findIndex(activeId)`).
+- **#5 "more like this" = browser-client hook, NOT `src/server/get-songs-by-author.ts`** —
+  server reads can't be imported into the client player. Enqueue-after-current (no replace,
+  no auth gate; queue-only). Author match is exact `eq('author', …)`.
+- **#4 (locked, NEXT):** EVOLVE `DESIGN-spotify.md` FIRST (sticky top header: left logo /
+  center-left search bar / right login+actions; refreshed visual hierarchy + any new
+  `@theme` tokens in `architecture.md`), THEN implement (`Header.tsx` → sticky bar +
+  persistent search routing to `/search?q=`, reusing the URL-driven `SearchInput`; apply
+  spacing/type/card/hover treatments; re-verify 375/768/1024/1440). Only sanctioned change
+  to the design doc. Moving search into the header is an IA change — keep `/search` working.
+- **#3:** Radix dep approved + broad scope; wrapped INSIDE shared button components so all
+  usages inherit. **#1:** sidebar footer (md+) + mobile content footer (<md, not header).
+  **#2:** reuse `getSongs()` (Home-consistent), cap 12 via `.slice()` not `.limit()`.
 
 ## Problems solved
 
-- **App-shell clearance bug (#1):** at `≥md` the sidebar footer hid BEHIND the
-  `fixed bottom-0 h-24` player bar (aside fills full viewport height; fixed player takes no
-  flow space). **Fix: `pb-24` on the sidebar `<aside>`** (mirrors `<main>`'s `md:pb-24`).
-  Durable rule in `ui-registry.md`.
-- **Radix Tooltip API** confirmed via Context7 (`/radix-ui/website`): one `Tooltip.Provider`
-  at root, then `Root → Trigger asChild → Portal → Content`. React context crosses portals,
-  so tooltips inside the portaled `Modal` still see the root Provider.
-- **Portfolio URLs verified:** GitHub repo URL correct but repo is **PRIVATE → 404 for
-  visitors**; LinkedIn unverifiable (HTTP 999 bot-block); site loads; email valid.
+- **App-shell clearance bug (#1):** at `≥md` sidebar footer hid BEHIND the `fixed h-24`
+  player bar (aside fills full viewport height). Fix: `pb-24` on the sidebar `<aside>`
+  (mirrors `<main>`'s `md:pb-24`). Durable rule in `ui-registry.md`.
+- **Radix Tooltip (#3):** one root `Tooltip.Provider`; `Root→Trigger asChild→Portal→Content`;
+  React context crosses portals so tooltips inside the portaled `Modal` work.
+- **Portfolio URLs:** GitHub repo URL correct but repo PRIVATE → 404 for visitors; LinkedIn
+  unverifiable (HTTP 999); site loads; email valid.
 
 ## Current state
 
-- Branch **`post-v1-enhancements`**. #1/#2/#3 done. Static verification green throughout:
-  `npm run lint` clean; #3 also `npx tsc --noEmit` clean; #1 passed `npm run build`. Owner
-  visually confirmed all three (tooltips, search default, links).
-- **Dev server running in background** (Bash task `bf22jsc01`, localhost:3000). It started
-  BEFORE the tooltip dep install — if a tooltip throws "module not found", restart it. Do NOT
-  run `npm run build` while it's up (`.next` contention) — use lint + `tsc --noEmit` + curl.
-- **Uncommitted working tree:** untracked `changes to implement.md`, `ui-registry.md`,
-  `memory.md`, `src/components/PortfolioLinks.tsx`, `src/components/Tooltip.tsx`,
-  `src/providers/TooltipProvider.tsx`; modified `src/lib/constants.ts`,
-  `src/components/Sidebar.tsx`, `src/app/layout.tsx`, `src/app/(site)/search/page.tsx`,
-  `context/code-standards.md`, `package.json` + lockfile, `Header.tsx`, `LikeButton.tsx`,
+- Branch **`post-v1-enhancements`**. #1/#2/#3 done + owner-verified. **#5 built, lint +
+  `npx tsc --noEmit` clean, but live behaviour NOT yet checked** (owner couldn't test now).
+- **Dev server running in background** (Bash task `bf22jsc01`, localhost:3000). #5 added no
+  dep → hot-reloads (no restart needed). Avoid `npm run build` while dev is up (`.next`
+  contention) — use lint + `tsc --noEmit` + curl.
+- **Uncommitted working tree** (lots): untracked `changes to implement.md`, `ui-registry.md`,
+  `memory.md`, `PortfolioLinks.tsx`, `Tooltip.tsx`, `TooltipProvider.tsx`,
+  `src/hooks/useMoreLikeThis.ts`; modified `constants.ts`, `Sidebar.tsx`, `layout.tsx`,
+  `search/page.tsx`, `code-standards.md`, `package.json`+lock, `Header.tsx`, `LikeButton.tsx`,
   `AddToPlaylistButton.tsx`, `PlaylistList.tsx`, `Modal.tsx`, `player/PlayerContent.tsx`,
-  `playlist/PlaylistHeaderActions.tsx`.
+  `playlist/PlaylistHeaderActions.tsx`, `src/stores/use-player.ts`.
 
 ## Next session starts with
 
-**#5 Enhance the play bar** (owner runs `/architect` per feature first). Shuffle: add
-`isShuffled` (+ preserve original order) to `src/stores/use-player.ts`; shuffle button in
-`PlayerContent` controls cluster; next/prev walk shuffled order; toggle restores launched-from
-order; active = accent green. "More like this": new `src/server/get-songs-by-author.ts`
-(RLS-scoped, exclude current track) → append to queue via `setIds`, toast if none. Wrap both
-new buttons in the existing `<Tooltip>`. Run `/imprint` after.
+**First: live-verify #5** when the app is reachable (the "Verify later" checklist in
+`changes to implement.md` §5 — shuffle random-order + persist/reshuffle, more-like-this
+enqueue+toast, tooltips). Seeding 2–3 same-author demo songs makes both demo-able.
+**Then: #4 UI modernization** (owner runs `/architect`). Step A = update `DESIGN-spotify.md`
+with the sticky-header + visual-hierarchy direction; Step B = implement Header sticky bar +
+persistent search, card/spacing/hover refresh, responsive re-verify.
 
 ## Open questions
 
-- **Imprint the `Tooltip` component** into `ui-registry.md` (follow-up, not yet done).
-- **GitHub repo still PRIVATE** — make public or the portfolio link is dead for recruiters.
+- **Live-verify #5** (pending — owner couldn't check this session).
+- **Imprint** the `Tooltip` component + player into `ui-registry.md` (follow-up, not done).
+- **GitHub repo still PRIVATE** — make public or the portfolio link 404s for recruiters.
 - LinkedIn URL unverified (format valid) — owner eyeball.
 - Run `/imprint audit` to baseline the pre-registry v1 UI? (offered, not done.)
 - When/how to commit the branch (owner controls; NO co-author line per global rule).
