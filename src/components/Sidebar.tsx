@@ -6,6 +6,7 @@ import { FiHome, FiSearch, FiMusic, FiHeart } from 'react-icons/fi'
 import { useUser } from '@/hooks/useUser'
 import { PlaylistList } from '@/components/PlaylistList'
 import { PortfolioLinks } from '@/components/PortfolioLinks'
+import { Tooltip } from '@/components/Tooltip'
 
 const navItems = [
   { label: 'Home', href: '/', icon: FiHome },
@@ -37,19 +38,21 @@ export function Sidebar() {
         {items.map(({ label, href, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + '/')
           return (
-            <Link
-              key={href}
-              href={href}
-              aria-label={label}
-              className={`flex items-center justify-center gap-4 rounded-pill px-4 py-3 transition lg:justify-start ${
-                isActive
-                  ? 'bg-surface-2 text-text font-bold'
-                  : 'text-muted hover:text-text'
-              }`}
-            >
-              <Icon className="h-6 w-6 flex-shrink-0" />
-              <span className="hidden text-sm font-bold lg:inline">{label}</span>
-            </Link>
+            // Tooltip is rail-only (lg:hidden) — at lg the text label is already visible.
+            <Tooltip key={href} content={label} side="right" className="lg:hidden">
+              <Link
+                href={href}
+                aria-label={label}
+                className={`flex items-center justify-center gap-4 rounded-pill px-4 py-3 transition lg:justify-start ${
+                  isActive
+                    ? 'bg-surface-2 text-text font-bold'
+                    : 'text-muted hover:text-text'
+                }`}
+              >
+                <Icon className="h-6 w-6 flex-shrink-0" />
+                <span className="hidden text-sm font-bold lg:inline">{label}</span>
+              </Link>
+            </Tooltip>
           )
         })}
       </nav>

@@ -6,6 +6,7 @@ import { FiPlus } from 'react-icons/fi'
 import { useUser } from '@/hooks/useUser'
 import { usePlaylistModal } from '@/stores/use-playlist-modal'
 import { useUserPlaylists } from '@/hooks/useUserPlaylists'
+import { Tooltip } from '@/components/Tooltip'
 
 // The signed-in user's playlists in the sidebar. Hidden for anonymous viewers.
 // The "+" opens the shared modal in create mode; create/rename/delete all
@@ -25,14 +26,16 @@ export function PlaylistList() {
         <span className="hidden text-xs font-bold uppercase tracking-wide text-muted lg:inline">
           Playlists
         </span>
-        <button
-          type="button"
-          aria-label="Create playlist"
-          onClick={onOpenCreate}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:text-text"
-        >
-          <FiPlus className="h-5 w-5" />
-        </button>
+        <Tooltip content="Create playlist">
+          <button
+            type="button"
+            aria-label="Create playlist"
+            onClick={onOpenCreate}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:text-text"
+          >
+            <FiPlus className="h-5 w-5" />
+          </button>
+        </Tooltip>
       </div>
 
       <nav className="mt-2 hidden space-y-1 overflow-y-auto lg:block">

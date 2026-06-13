@@ -24,6 +24,7 @@
 | - | ---- | -------- |
 | 1 | Portfolio links placement | **Sidebar footer (desktop) + mobile content footer** (sidebar is hidden < `md`) — ✅ **built 2026-06-13** |
 | 2 | Search default content | **Recently-added songs** via `getSongs()` (real data, no schema change) — ✅ **built 2026-06-13** |
+| 3 | Tooltips | **`@radix-ui/react-tooltip`**, broad scope (all icon-only controls) — ✅ **built 2026-06-13** |
 | 4 | UI modernization scope | **Evolve the design system first** — update `DESIGN-spotify.md`, then implement to match |
 | 5 | "Remix" button | **Replace with "More like this" by author**; ship Shuffle alongside |
 
@@ -61,7 +62,7 @@ signing in — that rules out the `UserMenu` dropdown (hidden for anon).
 - [x] **Mobile spot = footer at the END of page content** (`md:hidden`, inside
       `layout.tsx`'s `<main>`) — **not the Header**, which keeps room for #4's search bar
       and is redesign-proof. (Changed from the original "mobile Header" plan.)
-- [ ] Tooltips — deferred to #3 (`aria-label`s added now regardless).
+- [x] Tooltips — added in #3 (`aria-label`s kept for a11y).
 
 **Bug fixed during build:** at `≥ md` the sidebar footer rendered *behind* the
 `fixed h-24` player bar — the aside had no bottom clearance (the `<main>` already used
@@ -104,28 +105,34 @@ recommendations are out of scope. Real data, no schema change, no new fetcher.
 
 ---
 
-## 3. Tooltips for discoverability
+## 3. Tooltips for discoverability ✅ DONE (2026-06-13)
 
-**Decision:** one reusable Radix-based tooltip, applied to icon-only controls.
+**Built on branch `post-v1-enhancements`** (not yet committed). Verified:
+`@radix-ui/react-tooltip` in `package.json` (`^1.2.9`); `npm run lint` + `npx tsc --noEmit`
+clean; owner visually confirmed tooltips on hover/focus.
 
-**New dependency (needs approval):** `@radix-ui/react-tooltip` — consistent with the
-existing Radix Dialog/Slider usage, accessible, tiny. **Add it to `code-standards.md` →
-Dependencies before installing.**
+**Decision:** one reusable Radix tooltip applied **broadly** to icon-only controls
+(owner-approved dep + broad scope). `aria-label`s kept everywhere (touch/AT fallback).
 
-**Plan**
-- [ ] Add `@radix-ui/react-tooltip` to the approved-deps list, then `npm install` it.
-- [ ] New `src/components/Tooltip.tsx` — thin wrapper (`<Tooltip label="Add song">`)
-      styled with tokens (`bg-surface-2`, `shadow-dialog`, `text-xs`, small delay).
-- [ ] Mount one `Tooltip.Provider` (in `layout.tsx` or a provider) wrapping the tree.
-- [ ] Apply to icon-only buttons: Header (`+` upload, create-playlist), player
-      (prev / play-pause / next / mute / shuffle / more-like-this), `LikeButton`,
-      `AddToPlaylistButton`, sidebar nav on the `md` icon rail, `PlaylistHeaderActions`.
-- [ ] Replace ad-hoc `title=` attributes (BottomNav, etc.) where the styled tooltip is
-      used; keep `aria-label` everywhere for a11y.
+**What was built**
+- [x] Added `@radix-ui/react-tooltip` to `code-standards.md` approved-deps, then installed.
+- [x] `src/components/Tooltip.tsx` — reusable `<Tooltip content="…">{trigger}</Tooltip>`
+      (Radix `Trigger asChild`), token-styled (`bg-surface-2` / `text-xs` / `text-text` /
+      `shadow-dialog`); optional `side` + `className`.
+- [x] `src/providers/TooltipProvider.tsx` — single root `Tooltip.Provider`
+      (`delayDuration={300}`), mounted in `layout.tsx` around the shell + player.
+- [x] Applied across 8 files: Header (upload / create-playlist), player transport
+      (prev / play↔pause / next / mute↔unmute, dynamic labels), `LikeButton`,
+      `AddToPlaylistButton`, `PlaylistHeaderActions` (add songs / rename / delete),
+      `PlaylistList` create `+`, the `md` sidebar-rail nav (`lg:hidden`, `side="right"` —
+      rail-only), and the `Modal` close `X`.
+- [x] Skipped `BottomNav` (touch-only) and `UserMenu` (menu trigger); all `aria-label`s kept.
 
 **Tradeoffs / notes**
-- A pure CSS/`title` approach avoids the dep but can't match the design tokens or
-  hover delay; Radix is the cleaner, consistent choice given the stack.
+- Tooltips are hover/focus affordances — touch relies on the retained `aria-label`s.
+- A pure CSS/`title` approach avoids the dep but can't match the design tokens or hover
+  delay; Radix is the cleaner, consistent choice given the stack.
+- Follow-up: record the `Tooltip` pattern in `ui-registry.md` via `/imprint`.
 
 ---
 
@@ -194,8 +201,8 @@ out of scope; author-based queueing uses real data.
 
 1. ~~**#1 Portfolio links**~~ — ✅ **done (2026-06-13)**.
 2. ~~**#2 Search default**~~ — ✅ **done (2026-06-13)**.
-3. **#3 Tooltips** — reusable; also feeds the new #5 buttons. ← **next**
-4. **#5 Play bar** (shuffle + more-like-this) — medium.
+3. ~~**#3 Tooltips**~~ — ✅ **done (2026-06-13)**.
+4. **#5 Play bar** (shuffle + more-like-this) — medium. ← **next**
 5. **#4 UI modernization** — largest; design-doc update → implement. Sequenced last
    so the smaller tweaks don't get reworked.
 

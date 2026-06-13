@@ -16,6 +16,7 @@ import { SeekSlider } from '@/components/player/SeekSlider'
 import { VolumeSlider } from '@/components/player/VolumeSlider'
 import { LikeButton } from '@/components/LikeButton'
 import { AddToPlaylistButton } from '@/components/AddToPlaylistButton'
+import { Tooltip } from '@/components/Tooltip'
 import { usePlayer } from '@/stores/use-player'
 import type { Song } from '@/types'
 
@@ -139,31 +140,37 @@ export function PlayerContent({ song, songUrl }: PlayerContentProps) {
       {/* Center: controls + seek bar */}
       <div className="flex max-w-[520px] flex-1 flex-col items-center gap-1">
         <div className="flex items-center gap-4 md:gap-6">
-          <button
-            onClick={onPlayPrevious}
-            className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-text"
-            aria-label="Previous"
-          >
-            <FiSkipBack className="h-5 w-5" />
-          </button>
-          <button
-            onClick={handlePlayPause}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-black transition hover:bg-accent-border"
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isPlaying ? (
-              <FiPause className="h-6 w-6" />
-            ) : (
-              <FiPlay className="h-6 w-6 fill-current" />
-            )}
-          </button>
-          <button
-            onClick={onPlayNext}
-            className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-text"
-            aria-label="Next"
-          >
-            <FiSkipForward className="h-5 w-5" />
-          </button>
+          <Tooltip content="Previous">
+            <button
+              onClick={onPlayPrevious}
+              className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-text"
+              aria-label="Previous"
+            >
+              <FiSkipBack className="h-5 w-5" />
+            </button>
+          </Tooltip>
+          <Tooltip content={isPlaying ? 'Pause' : 'Play'}>
+            <button
+              onClick={handlePlayPause}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-black transition hover:bg-accent-border"
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isPlaying ? (
+                <FiPause className="h-6 w-6" />
+              ) : (
+                <FiPlay className="h-6 w-6 fill-current" />
+              )}
+            </button>
+          </Tooltip>
+          <Tooltip content="Next">
+            <button
+              onClick={onPlayNext}
+              className="flex h-11 w-11 items-center justify-center text-muted transition hover:text-text"
+              aria-label="Next"
+            >
+              <FiSkipForward className="h-5 w-5" />
+            </button>
+          </Tooltip>
         </div>
 
         <div className="flex w-full items-center gap-2">
@@ -179,17 +186,19 @@ export function PlayerContent({ song, songUrl }: PlayerContentProps) {
 
       {/* Right: volume (hidden on touch widths — hardware volume there) */}
       <div className="hidden min-w-0 flex-1 items-center justify-end gap-2 md:flex">
-        <button
-          onClick={() => setIsMuted((m) => !m)}
-          className="text-muted transition hover:text-text"
-          aria-label={isMuted ? 'Unmute' : 'Mute'}
-        >
-          {isMuted || volume === 0 ? (
-            <FiVolumeX className="h-5 w-5" />
-          ) : (
-            <FiVolume2 className="h-5 w-5" />
-          )}
-        </button>
+        <Tooltip content={isMuted ? 'Unmute' : 'Mute'}>
+          <button
+            onClick={() => setIsMuted((m) => !m)}
+            className="text-muted transition hover:text-text"
+            aria-label={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted || volume === 0 ? (
+              <FiVolumeX className="h-5 w-5" />
+            ) : (
+              <FiVolume2 className="h-5 w-5" />
+            )}
+          </button>
+        </Tooltip>
         <VolumeSlider
           value={isMuted ? 0 : volume}
           onChange={handleVolumeChange}
