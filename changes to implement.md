@@ -23,7 +23,7 @@
 | # | Area | Decision |
 | - | ---- | -------- |
 | 1 | Portfolio links placement | **Sidebar footer (desktop) + mobile content footer** (sidebar is hidden < `md`) — ✅ **built 2026-06-13** |
-| 2 | Search default content | **Recently-added public songs** (real data, no schema change) |
+| 2 | Search default content | **Recently-added songs** via `getSongs()` (real data, no schema change) — ✅ **built 2026-06-13** |
 | 4 | UI modernization scope | **Evolve the design system first** — update `DESIGN-spotify.md`, then implement to match |
 | 5 | "Remix" button | **Replace with "More like this" by author**; ship Shuffle alongside |
 
@@ -73,28 +73,34 @@ it's made public (see the Portfolio URLs table above).
 
 ---
 
-## 2. Improve search-page UX
+## 2. Improve search-page UX ✅ DONE (2026-06-13)
 
-**Decision:** default the empty-query state to **recently-added public songs**.
-"Trending/popular/recommended" are not backed by real data — there's no play-count or
-analytics column and recommendations are explicitly out of scope (`project-overview.md`).
-Recently-added is honest, real, and needs no schema change.
+**Built on branch `post-v1-enhancements`** (not yet committed). Verified: `npm run lint`
+green; against the running dev server, anon `/search` (no query) → 200 with the "Recently
+added" grid (old prompt gone), and `/search?q=<no-match>` → 200 still shows "No songs
+found for…" (results branch intact).
 
-**Plan**
-- [ ] In `src/app/(site)/search/page.tsx`, when `query === ''`, fetch recent songs via
-      the existing `getSongs()` read (already `order('created_at', desc)`; RLS returns
-      public + the viewer's own). Slice to ~12.
-- [ ] Render a "Recently added" heading + `<SongGrid>` instead of the bare prompt.
-      Plays/likes/add-to-playlist all come free from `SongItem`.
-- [ ] After a query: unchanged (results grid / "No songs found").
-- [ ] Optional: a short label distinguishing the default browse view from results.
+**Decision:** default the empty-query state to **recently-added songs** via the existing
+`getSongs()` read (owner-chosen: Home-consistent over a strictly-public variant).
+"Trending/popular/recommended" were rejected — no play-count/analytics data and
+recommendations are out of scope. Real data, no schema change, no new fetcher.
+
+**What was built** (single file — `src/app/(site)/search/page.tsx`)
+- [x] When `query === ''`, fetch `(await getSongs()).slice(0, 12)` — the 12 newest songs
+      (RLS-scoped: public to all, plus the signed-in viewer's own). **Did not** add
+      `.limit()` to `getSongs()` itself (Home shares it and must stay unbounded).
+- [x] Render a "Recently added" heading (`text-lg font-semibold`) + the existing
+      `<SongGrid>` instead of the bare prompt; thin/empty catalog shows "No songs in the
+      catalog yet." Plays/likes/add-to-playlist come free from `SongItem`; playing sets
+      the queue to the recent list (`SongGrid`'s `useOnPlay`).
+- [x] After a query: unchanged (results grid / "No songs found"). `SearchInput`,
+      `searchSongs`, and the URL-driven flow untouched.
 
 **Tradeoffs / notes**
-- `getSongs()` shows a signed-in viewer their own private songs too (the documented
-  Home deviation, 08). Acceptable and consistent with Home. If the search default must
-  be strictly public, add a small `.eq('is_public', true)` variant fetcher.
-- "Recently searched" (localStorage chips) was considered but adds client state for
-  little portfolio payoff; can layer on later.
+- `getSongs()` shows a signed-in viewer their own private songs too (the documented Home
+  deviation, 08) — accepted, consistent with Home; anon sees public-only via RLS.
+- "Recently searched" (localStorage chips) was considered but adds client state for little
+  portfolio payoff; can layer on later.
 
 ---
 
@@ -187,8 +193,8 @@ out of scope; author-based queueing uses real data.
 ## Suggested build order
 
 1. ~~**#1 Portfolio links**~~ — ✅ **done (2026-06-13)**.
-2. **#2 Search default** — quick, real data. ← **next**
-3. **#3 Tooltips** — reusable; also feeds the new #5 buttons.
+2. ~~**#2 Search default**~~ — ✅ **done (2026-06-13)**.
+3. **#3 Tooltips** — reusable; also feeds the new #5 buttons. ← **next**
 4. **#5 Play bar** (shuffle + more-like-this) — medium.
 5. **#4 UI modernization** — largest; design-doc update → implement. Sequenced last
    so the smaller tweaks don't get reworked.

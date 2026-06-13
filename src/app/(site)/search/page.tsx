@@ -1,4 +1,5 @@
 import { searchSongs } from '@/server/search-songs'
+import { getSongs } from '@/server/get-songs'
 import { SearchInput } from '@/components/SearchInput'
 import { SongGrid } from '@/components/SongGrid'
 
@@ -13,6 +14,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q } = await searchParams
   const query = q?.trim() ?? ''
   const songs = query ? await searchSongs(query) : []
+  // No query: show the newest catalog songs as a browse default (RLS-scoped, like Home).
+  const recent = query ? [] : (await getSongs()).slice(0, 12)
 
   return (
     <div className="space-y-8 p-6">
@@ -22,7 +25,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       </div>
 
       {query === '' ? (
-        <p className="text-sm text-muted">Search for songs by title or artist.</p>
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold text-text">Recently added</h2>
+          <SongGrid songs={recent} emptyMessage="No songs in the catalog yet." />
+        </section>
       ) : (
         <SongGrid songs={songs} emptyMessage={`No songs found for “${query}”.`} />
       )}
