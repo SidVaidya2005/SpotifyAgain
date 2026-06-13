@@ -333,6 +333,33 @@ A subtle green hover/focus glow on interactive cards + header buttons as a funct
 
 ---
 
+## Phase 11 — Sectioned Home
+
+> **Added 2026-06-13, after the demo catalog was seeded (1 → 19 public songs, incl. a 3-track
+> "Night Runners" author cluster).** Turns Home from one flat grid into labeled shelves built from
+> **real data only** — recency, author, and ownership. **Out of scope (unchanged):** "made for you",
+> recommendations, "trending" — no play-history/taste/genre signal exists to make them honest. No
+> schema/route/dependency/design-doc change; reuses the §10.4 section-rhythm pattern already on `/search`.
+
+### 26 Sectioned Home
+
+Home becomes several labeled sections instead of a single grid.
+
+**UI:**
+- **"Recently added"** (newest 12) for everyone. **Signed-in only, hidden when empty:** **"Made by you"**
+  (your uploads, with visibility badges) + **"Liked songs"**. **"Browse by artist"** — one author-grouped
+  shelf per artist with **≥2 songs** (single-song artists stay in "Recently added"); today that's "Night
+  Runners" (3). Section rhythm per `DESIGN-spotify.md` §10.4 (Feature Headings, `space-y-8`); `sr-only`
+  `<h1>Home</h1>` for a11y.
+
+**Logic:**
+- New `src/server/optional-user.ts` (`getOptionalUser` — returns the user or null, **never redirects**, so
+  Home stays public) and pure helper `src/lib/artists.ts` (`groupSongsByAuthor(songs, minSongs=2)`).
+  `page.tsx` parallelizes `getOptionalUser` + `getSongs`, then (if signed in) `getSongsByUser` +
+  `getLikedSongs`. All reads stay RLS-scoped; grouping runs on the already-scoped list — no visibility change.
+
+---
+
 ## Feature Count
 
 | Phase | Features |
@@ -347,4 +374,5 @@ A subtle green hover/focus glow on interactive cards + header buttons as a funct
 | Phase 8 — Deployment | 1 |
 | Phase 9 — Post-v1 Enhancements | 5 |
 | Phase 10 — v2 UI Refinements | 4 |
-| **Total** | **25** |
+| Phase 11 — Sectioned Home | 1 |
+| **Total** | **26** |

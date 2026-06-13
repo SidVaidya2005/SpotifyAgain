@@ -10,9 +10,9 @@
 
 ## Current Status
 
-**Phase:** v1 **COMPLETE (16/16)**, live + LIVE-VERIFIED 2026-06-12 ("everything working fine") at **https://spotifyagain.onrender.com**. **Phase 9 — Post-v1 Enhancements: all 5 built** (merged into `main`; single-branch repo). **Phase 10 — v2 UI Refinements (22–25): all 4 built and user-verified live** (2026-06-13). **#20 (play bar) still awaits a live check**; everything else owner/user-verified.
-**Last completed:** 25 Stronger hover feedback — subtle green hover/`focus-visible` glow on `SongItem` cards + the header upload / create-playlist buttons, via `--shadow-glow` / `--shadow-card-glow` `@theme` tokens; sanctioned `DESIGN-spotify.md` §7 exception first. User-verified live. (Phase 10 also: 22 fixed app-shell + full-width header, 23 anon nav prompts sign-in, 24 `/search` search-bar dedupe.) Tracked during the build in root `v2-changes.md`, now folded into the context docs and **retired**.
-**Next:** Live-verify 20 (play bar — shuffle + "more like this"; seed ≥2 same-author demo songs to exercise it), then `/imprint` the new components (Phase 9 + Phase 10) into `ui-registry.md`. v2 work is uncommitted on `main` (owner decides when to commit). The GitHub repo is **public** (verified 2026-06-13); Render redeploys from `main`.
+**Phase:** v1 **COMPLETE (16/16)**, live + LIVE-VERIFIED 2026-06-12 ("everything working fine") at **https://spotifyagain.onrender.com**. **Phase 9 — Post-v1 Enhancements: all 5 built** (merged into `main`; single-branch repo). **Phase 10 — v2 UI Refinements (22–25): all 4 built and user-verified live** (2026-06-13). **Phase 11 — Sectioned Home (26): built, tsc+lint clean; live-verify pending.** **#20 (play bar) still awaits a live check**; everything else owner/user-verified.
+**Last completed:** 26 Sectioned Home — Home restructured from one flat grid into labeled shelves ("Recently added" + signed-in-only "Made by you" / "Liked songs" + "Browse by artist" author-grouped rows for ≥2-song artists; today "Night Runners" ×3). New `src/server/optional-user.ts` (`getOptionalUser`, no redirect) + pure `src/lib/artists.ts` (`groupSongsByAuthor`); `page.tsx` parallelizes reads. Honest-data-only sections (no "made for you" — out of scope). tsc + lint clean; **not yet live-verified or committed.**
+**Next:** Live-verify **26** (Home sections render: anon sees Recently added + Browse by artist→Night Runners; owner also sees Made by you / Liked songs). Also still pending: live-verify **20** (play bar — exercise against the seeded Night Runners cluster), then `/imprint` the new components (Phase 9–11) into `ui-registry.md`. Uncommitted on `main` (owner decides when to commit; now includes the seed script + Phase 11). The GitHub repo is **public**; Render redeploys from `main`.
 
 ---
 
@@ -62,6 +62,9 @@
 - [x] 23 Personal nav items prompt sign-in (anon)
 - [x] 24 Remove duplicate search bar on `/search`
 - [x] 25 Stronger hover feedback (green glow)
+
+### Phase 11 — Sectioned Home
+- [ ] 26 Sectioned Home — built (tsc+lint clean); ⏳ live-verify pending
 
 ---
 
@@ -149,6 +152,19 @@ The non-obvious things worth carrying forward — distilled from the per-feature
   `--shadow-card-glow` (card lift + halo) in `@theme` — **Tailwind `shadow-*` utilities don't stack**
   (each sets `box-shadow`), so the card needs the combined token. Restrained scope: `SongItem` cards +
   the header upload / create-playlist buttons only; NOT nav links or the white OAuth button.
+
+### Sectioned Home (26)
+- **`getOptionalUser` vs `requireUser` (26):** public pages with signed-in-only sections (Home) read
+  the user with **`src/server/optional-user.ts` → `getOptionalUser()` (returns `User | null`, NEVER
+  redirects)** — using `requireUser()` would wrongly bounce anonymous visitors off Home. Personal pages
+  still use `requireUser()`.
+- **Artist shelves are author-grouped rows with a ≥2-song threshold (26):** `src/lib/artists.ts`
+  `groupSongsByAuthor(songs, minSongs=2)` (pure) — single-song artists would be one-card shelves, so they
+  stay in "Recently added"; only ≥2-song authors get a "Browse by artist" shelf (today: Night Runners ×3).
+  Grouping runs on the **already RLS-scoped** `getSongs()` list, so it never widens visibility.
+- **Honest sections only (26):** Home sections derive from real data (recency / author / ownership). No
+  "made for you" / recommendations / trending — out of scope per `project-overview.md` AND we have no
+  play-history/taste/genre signal to make them real (a fake label hurts a portfolio piece).
 
 ---
 
