@@ -10,9 +10,9 @@
 
 ## Current Status
 
-**Phase:** v1 **COMPLETE (16/16)**, live + LIVE-VERIFIED 2026-06-12 ("everything working fine") at **https://spotifyagain.onrender.com**. **Phase 9 — Post-v1 Enhancements: all 5 built**, committed (`V1: 1…5` + the context update) and **merged into `main`** — the `post-v1-enhancements` branch was deleted, so the repo is now single-branch. **#20 (play bar) awaits a live check**; #17–19 + #21 owner-verified.
-**Last completed:** 21 UI modernization v2 — sticky translucent header (logo moved in, nav stays in sidebar), inline live-search dropdown, `SongItem` hover-lift, top gradient; design system evolved first via `DESIGN-spotify.md` §10. Owner-verified ("everything looks fine").
-**Next:** Live-verify 20 (play bar — shuffle + "more like this"; seed ≥2 same-author demo songs to exercise it), then `/imprint` the new components into `ui-registry.md`. The GitHub repo is **public** (verified 2026-06-13), so the #17 portfolio link resolves; `main` is merged + pushed and Render redeploys from it.
+**Phase:** v1 **COMPLETE (16/16)**, live + LIVE-VERIFIED 2026-06-12 ("everything working fine") at **https://spotifyagain.onrender.com**. **Phase 9 — Post-v1 Enhancements: all 5 built** (merged into `main`; single-branch repo). **Phase 10 — v2 UI Refinements (22–25): all 4 built and user-verified live** (2026-06-13). **#20 (play bar) still awaits a live check**; everything else owner/user-verified.
+**Last completed:** 25 Stronger hover feedback — subtle green hover/`focus-visible` glow on `SongItem` cards + the header upload / create-playlist buttons, via `--shadow-glow` / `--shadow-card-glow` `@theme` tokens; sanctioned `DESIGN-spotify.md` §7 exception first. User-verified live. (Phase 10 also: 22 fixed app-shell + full-width header, 23 anon nav prompts sign-in, 24 `/search` search-bar dedupe.) Tracked during the build in root `v2-changes.md`, now folded into the context docs and **retired**.
+**Next:** Live-verify 20 (play bar — shuffle + "more like this"; seed ≥2 same-author demo songs to exercise it), then `/imprint` the new components (Phase 9 + Phase 10) into `ui-registry.md`. v2 work is uncommitted on `main` (owner decides when to commit). The GitHub repo is **public** (verified 2026-06-13); Render redeploys from `main`.
 
 ---
 
@@ -56,6 +56,12 @@
 - [x] 19 Tooltips for discoverability (area #3)
 - [ ] 20 Enhance the play bar (area #5) — built; ⏳ live-verify pending
 - [x] 21 UI modernization v2 (area #4)
+
+### Phase 10 — v2 UI Refinements (folded in from the retired root `v2-changes.md`)
+- [x] 22 Fixed app-shell + full-width header
+- [x] 23 Personal nav items prompt sign-in (anon)
+- [x] 24 Remove duplicate search bar on `/search`
+- [x] 25 Stronger hover feedback (green glow)
 
 ---
 
@@ -126,6 +132,24 @@ The non-obvious things worth carrying forward — distilled from the per-feature
 - **GitHub repo is PUBLIC** (verified 2026-06-13, `isPrivate:false`) → the #17 portfolio link resolves
   for logged-out recruiters (17). LinkedIn URL format-valid but not bot-verifiable.
 
+### v2 UI refinements (22–25)
+- **Fixed app-shell (22):** the whole chrome is `fixed` and **only `<main>` scrolls** — `<main>` is
+  `fixed inset-x-0 top-16 bottom-24 overflow-y-auto`, offset `md:left-24 lg:left-64`. Header full-width
+  `top-0 h-16` **above** the sidebar; sidebar inset `top-16 bottom-24` (not full height, scrolls
+  internally). Chrome `z-30`/`z-20` < modal overlay `z-40`. `DESIGN-spotify.md` §10.1 is authoritative.
+- **Anon nav (23):** `Sidebar` + `BottomNav` map a 4-item `navItems` with a `requiresAuth` flag; an anon
+  click on Library/Liked opens the `AuthModal` (renders a `<button>`) instead of `<Link>` — never a
+  silent redirect home.
+- **Search dedupe (24):** `/search` has NO page-level input; the global `HeaderSearch` (app shell) drives
+  it via `?q=`. The page grid updates on a **committed** query (Enter / "Show all results"), not
+  per-keystroke. `SearchInput.tsx` was **deleted** (was imported only by the page); `useDebounce` stays
+  (used by `HeaderSearch`).
+- **Green glow (25):** sanctioned `DESIGN-spotify.md` §7 **exception** — a subtle green hover/
+  `focus-visible` glow as *functional* feedback (not decoration). Tokens `--shadow-glow` (halo only) /
+  `--shadow-card-glow` (card lift + halo) in `@theme` — **Tailwind `shadow-*` utilities don't stack**
+  (each sets `box-shadow`), so the card needs the combined token. Restrained scope: `SongItem` cards +
+  the header upload / create-playlist buttons only; NOT nav links or the white OAuth button.
+
 ---
 
 ## Out-of-scope polish (if asked)
@@ -134,9 +158,10 @@ The non-obvious things worth carrying forward — distilled from the per-feature
   first impression); same-author songs are also needed to demo #20 (shuffle needs ≥2 queued; "more like
   this" needs ≥2 by one author). Must go through the app's upload flow (audio + cover → Storage); not
   MCP-seedable.
-- **`/imprint` the post-v1 components** into `ui-registry.md` — Tooltip, player shuffle / more-like-this,
-  Header, `SongItem` hover-lift, `HeaderSearch` dropdown (only `PortfolioLinks` + the `pb-24` rule are
-  recorded so far).
+- **`/imprint` the post-v1 + v2 components** into `ui-registry.md` — Tooltip, player shuffle /
+  more-like-this, Header, `SongItem` hover-lift, `HeaderSearch` dropdown (Phase 9); the fixed app-shell
+  (header/sidebar/main offsets), the green hover/focus glow (`--shadow-glow` / `--shadow-card-glow`), and
+  the anon sign-in-prompt nav pattern (Phase 10). Only `PortfolioLinks` + the `pb-24` rule recorded so far.
 - Bump Render free → Starter to kill the ~50s cold start.
 - README / portfolio write-up.
 

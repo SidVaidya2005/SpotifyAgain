@@ -22,7 +22,7 @@ export function SongItem({ song, onClick, showVisibility }: SongItemProps) {
   return (
     <div
       onClick={() => onClick(song.id)}
-      className="group relative cursor-pointer rounded-lg bg-card p-4 transition duration-200 hover:-translate-y-1 hover:bg-card-2 hover:shadow-card"
+      className="group relative cursor-pointer rounded-lg bg-card p-4 transition duration-200 hover:-translate-y-1 hover:bg-card-2 hover:shadow-card-glow"
     >
       {/* Cover */}
       <div className="relative mb-4 aspect-square overflow-hidden rounded bg-surface-2">

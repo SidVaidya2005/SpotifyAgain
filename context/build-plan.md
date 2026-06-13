@@ -280,6 +280,59 @@ Add depth and section separation across the shell — within the existing palett
 
 ---
 
+## Phase 10 — v2 UI Refinements
+
+> **Added 2026-06-13, after the live v1 + Phase 9 build.** A second round of UI refinements on the
+> live app, tracked during the build in the now-retired root `v2-changes.md`. All `architecture.md`
+> invariants + RLS unchanged; the only sanctioned design-doc changes are `DESIGN-spotify.md` §10.1
+> (rewritten, feature 22) and §7 (green hover/focus glow exception, feature 25). All four are built and
+> **user-verified live**. Full per-feature detail is in `build-journal.md`.
+
+### 22 Fixed app-shell + full-width header
+
+The header spans the full viewport width (above the sidebar) and the whole chrome is truly fixed — only the main content scrolls.
+
+**UI:**
+- Header = full-width bar fixed across the very top (`fixed inset-x-0 top-0 h-16`), above the sidebar.
+- Sidebar fixed on the left **between** header and player (`top-16 bottom-24`, not full height; scrolls internally). Player bar fixed full-width bottom. `<main>` is the sole scroll region.
+
+**Logic:**
+- `layout.tsx`: body `h-dvh overflow-hidden`; Header/Sidebar/main/PlayerBar/BottomNav are fixed direct children; `<main>` `fixed inset-x-0 top-16 bottom-24 overflow-y-auto`, offset `md:left-24 lg:left-64`.
+- Chrome at `z-30`/`z-20`, below the modal overlay (`z-40`). `DESIGN-spotify.md` §10.1 rewritten to the fixed full-width app-shell (sanctioned design change).
+
+### 23 Personal nav items prompt sign-in (anon)
+
+Logged-out users see all nav items; clicking a personal one prompts sign-in instead of silently redirecting.
+
+**UI:**
+- Sidebar + bottom nav show all four items (Home, Search, Library, Liked Songs) to everyone.
+
+**Logic:**
+- `Sidebar.tsx` + `BottomNav.tsx`: a 4-item `navItems` array with a `requiresAuth` flag; when `requiresAuth && !user`, render a sign-in-modal `<button>` (same className / tooltip / aria) instead of `<Link>`. `AuthModal` + store untouched (return-where-you-were). No deps/RLS changes.
+
+### 24 Remove the duplicate search bar on `/search`
+
+The page-level search input duplicated the global header search; remove it so the header drives the page.
+
+**UI:**
+- `/search` shows only the heading + grid; the global `HeaderSearch` is the single search input.
+
+**Logic:**
+- `search/page.tsx`: removed the `<SearchInput>` render + import; `<h1>Search</h1>` sits directly in the page's stack; the `?q=` read / `searchSongs` / recently-added default / `SongGrid` branches unchanged.
+- `SearchInput.tsx` **deleted** (was imported only by the page). Accepted tradeoff: the page grid now updates on a committed query (Enter / "Show all results"), not per-keystroke — the header dropdown (DESIGN §10.2) covers live typing.
+
+### 25 Stronger hover feedback (green glow)
+
+A subtle green hover/focus glow on interactive cards + header buttons as a functional feedback cue.
+
+**UI:**
+- `SongItem` cards + the header upload / create-playlist buttons gain a subtle green glow on hover (and `focus-visible` on the buttons). Restrained scope — NOT on sidebar nav links or the white OAuth button.
+
+**Logic:**
+- `DESIGN-spotify.md` §7 first — a **Sanctioned exception** allowing a transient green hover/focus glow as functional feedback. `globals.css` `@theme`: `--shadow-glow` (halo only) + `--shadow-card-glow` (card lift + halo) tokens (Tailwind `shadow-*` don't stack). `SongItem` swaps `hover:shadow-card` → `hover:shadow-card-glow`; `Header` buttons add `hover:shadow-glow focus-visible:shadow-glow`.
+
+---
+
 ## Feature Count
 
 | Phase | Features |
@@ -293,4 +346,5 @@ Add depth and section separation across the shell — within the existing palett
 | Phase 7 — Search | 1 |
 | Phase 8 — Deployment | 1 |
 | Phase 9 — Post-v1 Enhancements | 5 |
-| **Total** | **21** |
+| Phase 10 — v2 UI Refinements | 4 |
+| **Total** | **25** |

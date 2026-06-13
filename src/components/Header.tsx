@@ -40,7 +40,7 @@ export function Header() {
                 type="button"
                 aria-label="Create playlist"
                 onClick={playlistModal.onOpenCreate}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-accent"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-accent hover:shadow-glow focus-visible:shadow-glow focus-visible:outline-none"
               >
                 <MdPlaylistAdd className="h-5 w-5" />
               </button>
@@ -50,7 +50,7 @@ export function Header() {
                 type="button"
                 aria-label="Upload song"
                 onClick={uploadModal.onOpen}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-accent"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-accent hover:shadow-glow focus-visible:shadow-glow focus-visible:outline-none"
               >
                 <FiPlus className="h-5 w-5" />
               </button>

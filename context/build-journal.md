@@ -591,3 +591,75 @@
   the `pb-24` rule recorded so far) — still open, as is the #20 live check. **Resolved 2026-06-13:**
   GitHub repo made public; `progress-tracker.md` updated; `post-v1-enhancements` merged into `main`
   (`V1: 1…5` + the context update) and the branch deleted (single-branch repo); Render redeploys from `main`.
+
+---
+
+## v2 UI Refinements (Phase 10, 2026-06-13)
+
+> Second refinement round on the live app, tracked during the build in the root `v2-changes.md` (now
+> **retired** — its content is folded here + into `build-plan.md` Phase 10). Features **22–25**, built
+> one-at-a-time per `code-standards`, each via `/architect` then **user-verified live** on the dev
+> server. All `architecture.md` invariants + RLS unchanged; sanctioned design-doc changes:
+> `DESIGN-spotify.md` §10.1 (rewritten, feature 22) and §7 (green-glow exception, feature 25). The first
+> two (22, 23) were committed (`b8964cf`, `10d207d`); 24 + 25 are uncommitted on `main` at fold-in time
+> (owner controls commits).
+
+- **22 — Fixed app-shell + full-width header (USER-CHOSEN).** Problem: on desktop the header only spanned
+  the content column (sat to the *right* of the sidebar), and on scroll the header + sidebar "jiggled"
+  (header was `sticky`, not truly fixed; only the player bar was fixed). Decision: header = full-width bar
+  fixed across the very top **above** the sidebar; sidebar fixed on the left **between** header and player
+  (not full height); player fixed bottom; **only `<main>` scrolls.** `layout.tsx`: body → `h-dvh
+  overflow-hidden`; Header / Sidebar / main / PlayerBar / BottomNav are fixed direct children; `<main>` is
+  the sole scroller (`fixed inset-x-0 top-16 bottom-24 overflow-y-auto`, offset `md:left-24 lg:left-64`,
+  `pb-28 md:pb-6` to clear the mobile BottomNav; top-gradient + mobile portfolio footer kept inside it).
+  `Header.tsx` → `fixed inset-x-0 top-0 z-30 h-16` (was `sticky top-0`). `Sidebar.tsx` → `fixed left-0
+  top-16 bottom-24 z-20 overflow-y-auto` (no longer full height; scrolls internally). Chrome stays
+  `z-30`/`z-20`, below the modal overlay (`z-40`) so modals still cover it. `DESIGN-spotify.md` §10.1
+  rewritten to the fixed full-width app-shell (sanctioned design change). **Verified:** lint + `tsc
+  --noEmit` clean; user confirmed working live.
+
+- **23 — Personal nav items prompt sign-in when logged out (USER-CHOSEN, decision A).** Problem: the
+  sidebar + bottom nav showed **Library** to logged-out users, but clicking it silently redirected home
+  (feels broken); Liked Songs was hidden for anon. Decision: show **both** personal items (Library + Liked
+  Songs) to anon and **open the sign-in modal** on click instead of navigating. `Sidebar.tsx` +
+  `BottomNav.tsx` now map over a 4-item `navItems` (Home, Search, Library, Liked Songs) with a
+  `requiresAuth` flag; for `requiresAuth && !user` they render a `<button onClick={useAuthModal().onOpen}>`
+  styled identically to the nav link (same `className`, Tooltip + `aria-label` kept) instead of `<Link>`;
+  signed-in users get the normal `<Link>` and the active-highlight only applies to the link. `AuthModal` +
+  store untouched (return-where-you-were preserved). No new deps; no store/RLS changes. **Verified:** lint
+  + `tsc` clean; user-verified live.
+
+- **24 — Remove the duplicate search bar on `/search` (USER-CHOSEN, decision A).** Problem
+  (screenshot-confirmed): the global **header search** (`HeaderSearch`, in the app shell on every page)
+  and the `/search` page's own `SearchInput` were identical and stacked. Decision: drop the page's input;
+  the header search drives `/search` (already routes to `/search?q=` via `router.push`). `search/page.tsx`:
+  removed the `<SearchInput>` render + import and dropped the now single-child `space-y-4` wrapper so
+  `<h1>Search</h1>` sits directly in the page's `space-y-8` stack; the `?q=` read, `searchSongs`,
+  `getSongs().slice(0,12)` recently-added default, and both `SongGrid` branches are unchanged.
+  `SearchInput.tsx` **deleted** — `grep -rn "SearchInput" src/` confirmed it was imported only by the page;
+  `useDebounce` stays (still used by `HeaderSearch`). **Accepted tradeoff:** the page grid no longer
+  updates per-keystroke (the deleted input used a debounced `router.replace`); it updates only when a query
+  is **committed** from the header (Enter / "Show all results"). The header's live dropdown (DESIGN §10.2)
+  covers live-as-you-type; the full page is the "show all" destination — matches §10.2's intent, so live
+  typing was deliberately NOT re-wired into the page. **Verified:** `tsc --noEmit` + lint clean (no
+  dangling import); user-verified live.
+
+- **25 — Stronger hover feedback / green glow (USER-CHOSEN, decision B).** Problem: hover states felt
+  dull/ambiguous on the song cards + header buttons. Decision: a **subtle green hover/`focus-visible`
+  glow** as a *functional* feedback cue. Since DESIGN §7 says green is "functional only / never
+  decorative," the design system was evolved **first**: §7 gained a **"Sanctioned exception"** note (a
+  transient hover/focus glow is a functional interaction state — like play/active green — not decoration),
+  with guardrails (transient only, restrained scope, subtle, token-based). `globals.css` `@theme` got two
+  tokens — **Tailwind `shadow-*` utilities don't stack** (each sets `box-shadow`), so the card needs one
+  combined token: `--shadow-glow` (`0 0 16px 0 rgb(30 215 96 / 0.35)`, the green halo alone, for the
+  no-base-shadow header buttons) and `--shadow-card-glow` (`0 8px 8px rgb(0 0 0 / 0.3), 0 0 16px 0 rgb(30
+  215 96 / 0.28)`, the card lift **plus** halo). `SongItem.tsx`: card hover `hover:shadow-card` →
+  `hover:shadow-card-glow` (keeps the lift + `bg-card-2`). `Header.tsx`: the upload + create-playlist
+  buttons gained `hover:shadow-glow focus-visible:shadow-glow focus-visible:outline-none` (the glow doubles
+  as the focus ring). **Scope (agreed restraint to avoid green-washing the chrome):** cards + the two
+  header icon buttons only — explicitly NOT the sidebar nav links (their `muted→white` brightening is
+  enough), NOT the `Button` `outline`/`white` variants (the `white` one is the Google OAuth button — must
+  never glow green); the `pill` CTA glow was left off as optional. Hover + `focus-visible` only; no new
+  persistent active-state styling. The card is a `<div onClick>` (not keyboard-focusable; its focusable
+  controls are the inner play/like/add buttons), so no `focus-visible` there. **Verified:** `tsc --noEmit`
+  + lint clean; user-verified live ("working fine").

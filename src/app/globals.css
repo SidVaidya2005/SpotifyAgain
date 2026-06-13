@@ -38,6 +38,11 @@
   --shadow-dialog: 0 8px 24px rgb(0 0 0 / 0.5);
   --shadow-inset-border: 0 1px 0 #121212, inset 0 0 0 1px #7c7c7c;
 
+  /* Green hover/focus glow — sanctioned functional feedback (DESIGN §7 "Sanctioned exception").
+     Accent #1ed760 = rgb(30 215 96); low alpha so it reads as a cue, not a frame. */
+  --shadow-glow: 0 0 16px 0 rgb(30 215 96 / 0.35);                         /* halo only (header buttons) */
+  --shadow-card-glow: 0 8px 8px rgb(0 0 0 / 0.3), 0 0 16px 0 rgb(30 215 96 / 0.28); /* card lift + halo */
+
   /* Breakpoints — overrides Tailwind defaults to match the device targets */
   --breakpoint-xs: 425px;   /* large phones                              */
   --breakpoint-sm: 576px;   /* small tablets · 2-col grid                 */

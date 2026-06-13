@@ -227,6 +227,7 @@ Spotify's proprietary fonts (the Circular family) aren't licensable for this pro
 - Keep typography compact (10px–24px range) — this is an app, not a magazine
 - Use heavy shadows (`0.3–0.5 opacity`) for elevated elements on dark backgrounds
 - Let album art provide color — the UI itself is achromatic
+- Use a **subtle green hover/focus glow** on interactive cards/buttons as *functional* feedback (see note below)
 
 ### Don't
 - Don't use Spotify Green decoratively or on backgrounds — it's functional only
@@ -236,6 +237,19 @@ Spotify's proprietary fonts (the Circular family) aren't licensable for this pro
 - Don't add additional brand colors — green + achromatic grays is the complete palette
 - Don't use relaxed line-heights — Spotify's typography is compact and dense
 - Don't expose raw gray borders — use shadow-based or inset borders instead
+
+### Sanctioned exception — green hover/focus glow
+
+> **Added 2026-06-13** (v2 #4). A **subtle green glow** (a soft accent box-shadow halo, `#1ed760` at
+> low alpha) is allowed on interactive **cards and buttons** as **hover/focus-visible feedback**. This
+> is *functional* (a transient interaction state, like play/active green), **not** decoration — so it
+> stays consistent with "green is functional only." Guardrails:
+> - **Transient only:** appears on `:hover` / `:focus-visible`, never as a resting/persistent fill or border.
+> - **Restrained scope:** interactive `SongItem` cards + the header icon action buttons (upload,
+>   create-playlist) and green CTAs. **Not** on plain sidebar nav links or the white OAuth button —
+>   blanketing the chrome in green tips back into decoration.
+> - **Subtle:** a low-alpha halo, not a hard ring or bright outline; tuned so it reads as a cue, not a frame.
+> - Implemented as `@theme` glow tokens (`--shadow-glow`, `--shadow-card-glow`) — never a raw inline shadow.
 
 ## 8. Responsive Behavior
 
