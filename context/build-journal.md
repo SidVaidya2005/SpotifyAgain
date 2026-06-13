@@ -507,3 +507,85 @@
 - **16 — Catalog is thin: only 1 public song live.** Build-plan §16 wants "a few public demo songs"; seeding more is a
   user upload task (audio+cover go through the app's upload flow — not MCP-seedable). Left as optional content polish.
 - **16 — 🎉 PROJECT COMPLETE — all 16 features built, deployed, and live-verified.**
+
+---
+
+## Post-v1 Enhancements (branch `post-v1-enhancements`, 2026-06-13)
+
+> Net-new scope after the 16/16 v1 build shipped and was live-verified. Five owner-numbered
+> enhancement areas (#1–#5); renumbered **17–21** in `build-plan.md` Phase 9 in build/commit order
+> (the `V1: 1…5` commits). All built one-at-a-time per `code-standards`; **#20 (play bar) awaits a
+> live check.** All `architecture.md` invariants + RLS unchanged; the only sanctioned design-doc
+> change is `DESIGN-spotify.md` §10 (feature 21).
+
+- **17 (area #1) — Portfolio links, sidebar-footer + mobile-content placement (USER-CHOSEN).** Links
+  must be visible to logged-out recruiters, ruling out the anon-hidden `UserMenu`. `PORTFOLIO_LINKS`
+  centralized in `src/lib/constants.ts`; `PortfolioLinks.tsx` is plain presentational (no hooks / no
+  `'use client'`) so it renders in both the client `Sidebar` and the server `layout.tsx`. `variant:
+  'full' | 'compact'` — full (credit + icons) at `lg`, compact (icons only) on the `md` rail; mobile
+  spot is a footer at the END of `<main>` (`md:hidden`), NOT the header (keeps header room for #21's
+  search, redesign-proof). External links `target="_blank" rel="noopener noreferrer"`, email `mailto:`,
+  `aria-label` per link, `text-muted` (no accent, DESIGN §7).
+- **17 — pb-24 clearance bug (fixed).** At `≥ md` the sidebar footer rendered BEHIND the `fixed h-24`
+  player bar — the `<aside>` had no bottom clearance (the `<main>` already used `md:pb-24`). Fix: add
+  `pb-24` to the sidebar `<aside>`. Recorded as a durable app-shell clearance rule in `ui-registry.md`.
+- **17 — GitHub repo still PRIVATE** → that link 404s for logged-out visitors until made public.
+  LinkedIn URL format-valid but not bot-verifiable (HTTP 999). Email + personal site verified.
+- **18 (area #2) — Search default = recently-added (USER-CHOSEN over a public-only variant).** When
+  `query===''`, `src/app/(site)/search/page.tsx` fetches `(await getSongs()).slice(0,12)` (the 12 newest;
+  RLS-scoped — public to all + the signed-in viewer's own) and renders a "Recently added" heading + the
+  existing `<SongGrid>` instead of the bare prompt. Did NOT add `.limit()` to `getSongs()` itself (Home
+  shares it and must stay unbounded). Trending/popular/recs rejected — no analytics data, recs out of
+  scope. Single-file change; `SearchInput` / `searchSongs` / URL flow untouched.
+- **19 (area #3) — Tooltips, broad scope via Radix (USER-APPROVED dep + scope).** Added
+  `@radix-ui/react-tooltip` (`^1.2.9`) to `code-standards.md` approved-deps, then installed. Reusable
+  `Tooltip.tsx` (`<Tooltip content="…">{trigger}</Tooltip>`, Radix `Trigger asChild`, token-styled
+  `bg-surface-2` / `text-xs` / `shadow-dialog`, optional `side`); single root `TooltipProvider`
+  (`delayDuration={300}`) in `layout.tsx`. Applied across 8 files (header upload / create-playlist;
+  player prev / play↔pause / next / mute↔unmute with dynamic labels; `LikeButton`; `AddToPlaylistButton`;
+  `PlaylistHeaderActions`; `PlaylistList` create `+`; the `md` sidebar-rail nav with `side="right"`,
+  `lg:hidden`; the `Modal` close `X`). Skipped `BottomNav` (touch-only) + `UserMenu` (menu trigger); all
+  `aria-label`s kept as the touch/AT fallback.
+- **20 (area #5) — Play bar: Shuffle (persistent global toggle) + "More like this" (USER-CHOSEN).**
+  Replaced the undefined "Remix" with author-based queueing; algorithmic radio/recs stay out of scope.
+  `use-player.ts` gains `isShuffled` + `originalOrder` and actions `toggleShuffle` /
+  `addToQueueAfterActive`; `setIds` reshuffles a newly-launched list when shuffle is on (so every play
+  entry point inherits it — `useOnPlay` unchanged); `reset` clears the new fields. Pure module-scope
+  `shuffle` (Fisher–Yates) + `insertAfterActive` helpers; no Supabase. `useMoreLikeThis.ts` (NEW
+  browser-client hook — NOT a `src/server/*` read, which can't be imported into the client player):
+  RLS-scoped same-author read (excludes current), enqueues after the current track via
+  `addToQueueAfterActive`, toasts success / "No other songs by X." `PlayerContent.tsx` gains a Shuffle
+  button (`FiShuffle`, leftmost transport, `text-accent` + `aria-pressed` when on) and a "More like this"
+  button (`FiRadio`, left cluster, `hidden sm:flex`), both tooltip-wrapped. No new dependency.
+- **20 — VERIFY LATER (live/interactive, not curl-able; #20 is the only unverified post-v1 feature).**
+  Needs ≥2 queued songs: toggle shuffle → icon turns accent, current keeps playing, next traverses a
+  random order; toggle off → next follows original order; with shuffle on, playing a different list
+  reshuffles + shuffle stays on. "More like this" → same-author songs enqueue after current + toast; thin
+  catalog → "No other songs by X."; works signed out. Tooltips show on both buttons. Catalog is thin (~1
+  public song) so seed a few **same-author** demo songs (via the app upload flow) to demo both properly.
+- **21 (area #4) — UI modernization v2: evolve the design system FIRST, then implement (USER-CHOSEN).**
+  Direction = "add depth & separation." Step A: added **§10 "Modernization v2"** to `DESIGN-spotify.md`
+  (sticky header, live-search dropdown, card hover-lift, section rhythm, subtle `surface→base` top
+  gradient; all existing tokens, no new colors) — now authoritative for these. Step B implemented to
+  match: **header** — logo moved INTO the header (left, all sizes); **nav stays in the sidebar** (sidebar
+  wordmark removed); header restyled sticky (`bg-base/80` + `backdrop-blur` + soft seam), layout = logo ·
+  search · actions (`Header.tsx`, `Sidebar.tsx`). **Header search = inline live dropdown** (USER-CHOSEN,
+  not route-only): `HeaderSearch.tsx` + `useSearchSongs.ts` (browser-client, RLS-scoped, limit 6) +
+  shared `src/lib/search.ts` `sanitizeSearchQuery` (also reused by `src/server/search-songs.ts`, one
+  source of truth). Click a result → plays (queue = results); Enter / "Show all results" → `/search?q=`;
+  closes on outside-click/Escape; `useDebounce` reused. **Card depth** — `SongItem` hover-lift
+  (`-translate-y-1` + `shadow-card` + `bg-card-2`). **Top gradient** — `top-fade` `@utility` in
+  `globals.css`, mounted behind the top of `<main>` (`layout.tsx`).
+- **21 — gotchas.** Top-gradient stacking: an `absolute` top-of-content gradient renders ABOVE static
+  siblings → fixed with `-z-10` (and `<main>` `relative`). Tailwind v4 gradient naming ambiguity → used a
+  token-based `@utility top-fade` (linear-gradient `var(--color-surface)`→transparent) instead of a
+  `bg-gradient` / `bg-linear` class. Mild redundancy: header live-search + `/search`'s own `SearchInput`
+  + "Recently added" default coexist (accepted; shareable `/search?q=` URLs preserved). Mobile signed-in
+  density (logo + search + create + upload + avatar at 375px) is tight by design — owner-confirmed OK.
+- **21 — verified.** `npm run lint` + `npx tsc --noEmit` clean; headless `/` + `/search` 200 with the new
+  header search + top gradient, `/library` still 307-gates. **Owner visually confirmed ("everything looks
+  fine").** All five areas built; #20 awaits the live check above.
+- **Follow-ups (post-v1).** `/imprint` the new components (Tooltip, player shuffle / more-like-this,
+  Header, `SongItem` hover-lift, `HeaderSearch` dropdown) into `ui-registry.md` (only `PortfolioLinks` +
+  the `pb-24` rule recorded so far); make the GitHub repo public; update `progress-tracker.md` (done);
+  the branch is committed (`V1: 1…5`) but not yet merged to `main` (merge redeploys Render — owner decision).

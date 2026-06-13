@@ -10,9 +10,9 @@
 
 ## Current Status
 
-**Phase:** Phase 8 — Deployment **COMPLETE** — 🎉 **PROJECT COMPLETE (16/16)**, live + LIVE-VERIFIED by user 2026-06-12 ("everything working fine") at **https://spotifyagain.onrender.com**
-**Last completed:** 16 Deploy to Render — live on Render (Node Web Service, reused existing Supabase project `vgsiwqrovctitxkruwpj`). Pinned Node 22 (`.nvmrc` + `engines`), added `render.yaml` blueprint. **Fixed a prod-only OAuth bug:** the callback redirected to `new URL(request.url).origin`, which behind Render's proxy is the internal `localhost:10000` — switched it to `NEXT_PUBLIC_SITE_URL`. Anon browse/play, Google sign-in, upload, like, playlist all verified live.
-**Next:** — (build plan complete; remaining ideas are out-of-scope polish / more demo content)
+**Phase:** v1 **COMPLETE (16/16)**, live + LIVE-VERIFIED 2026-06-12 ("everything working fine") at **https://spotifyagain.onrender.com**. **Phase 9 — Post-v1 Enhancements: all 5 built** on branch `post-v1-enhancements` (committed `V1: 1…5`); **#20 (play bar) awaits a live check**, #17–19 + #21 owner-verified.
+**Last completed:** 21 UI modernization v2 — sticky translucent header (logo moved in, nav stays in sidebar), inline live-search dropdown, `SongItem` hover-lift, top gradient; design system evolved first via `DESIGN-spotify.md` §10. Owner-verified ("everything looks fine").
+**Next:** Live-verify 20 (play bar — shuffle + "more like this"; seed ≥2 same-author demo songs to exercise it). Then: make the GitHub repo **public** (the #17 portfolio link 404s until then), `/imprint` the new components into `ui-registry.md`. The live deploy stays at v1 until the branch is merged to `main`.
 
 ---
 
@@ -49,6 +49,13 @@
 
 ### Phase 8 — Deployment
 - [x] 16 Deploy to Render
+
+### Phase 9 — Post-v1 Enhancements (branch `post-v1-enhancements`)
+- [x] 17 Portfolio links integration (area #1)
+- [x] 18 Search default content (area #2)
+- [x] 19 Tooltips for discoverability (area #3)
+- [ ] 20 Enhance the play bar (area #5) — built; ⏳ live-verify pending
+- [x] 21 UI modernization v2 (area #4)
 
 ---
 
@@ -101,12 +108,35 @@ The non-obvious things worth carrying forward — distilled from the per-feature
 - Accent green is **functional-only** (play/active/CTA). Destructive = `bg-negative`; visibility badge
   + secondary CTAs stay achromatic / use `variant="white"` (12/13).
 
+### Post-v1 enhancements (17–21)
+- **Sidebar-footer clearance (17):** the portfolio footer hid behind the `fixed h-24` player bar — the
+  `<aside>` needs its own `pb-24` (the `<main>` already had `md:pb-24`). Durable app-shell rule.
+- **Top-gradient stacking (21):** an `absolute` top-of-content gradient renders ABOVE static siblings —
+  give it `-z-10` and make `<main>` `relative` so content sits on top.
+- **Tailwind v4 gradient (21):** used a token-based `@utility top-fade` (linear-gradient
+  `var(--color-surface)`→transparent), not a `bg-gradient`/`bg-linear` class (v4 naming ambiguity).
+- **Client search can't import server reads (20/21):** `'use client'` components can't import
+  `src/server/*`, so the header live-search uses a **browser-client** hook (`useSearchSongs`, RLS-scoped,
+  limit 6) and shares `sanitizeSearchQuery` from `src/lib/search.ts` with the server `searchSongs`. Same
+  reason "more like this" is a browser-client hook (`useMoreLikeThis`), not a `src/server/*` read.
+- **Shuffle lives in `setIds` (20):** shuffle is a persistent global toggle in `use-player`; reshuffling a
+  newly-launched list happens inside `setIds` (not `useOnPlay`), so every play entry point inherits it.
+- **`DESIGN-spotify.md` §10 is authoritative** for the modernized header / search dropdown / card
+  hover-lift / section rhythm / top gradient — the only sanctioned post-v1 design-doc change (21).
+- **GitHub repo is still PRIVATE** → the #17 portfolio link 404s for logged-out recruiters until made
+  public (17). LinkedIn URL format-valid but not bot-verifiable.
+
 ---
 
 ## Out-of-scope polish (if asked)
 
-- **Seed 3–6 public demo songs** — catalog has only **1** public song (thin first impression). Must
-  go through the app's upload flow (audio + cover → Storage); not MCP-seedable.
+- **Seed 3–6 public demo songs (incl. some same-author)** — catalog has only **1** public song (thin
+  first impression); same-author songs are also needed to demo #20 (shuffle needs ≥2 queued; "more like
+  this" needs ≥2 by one author). Must go through the app's upload flow (audio + cover → Storage); not
+  MCP-seedable.
+- **`/imprint` the post-v1 components** into `ui-registry.md` — Tooltip, player shuffle / more-like-this,
+  Header, `SongItem` hover-lift, `HeaderSearch` dropdown (only `PortfolioLinks` + the `pb-24` rule are
+  recorded so far).
 - Bump Render free → Starter to kill the ~50s cold start.
 - README / portfolio write-up.
 

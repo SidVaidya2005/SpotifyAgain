@@ -172,6 +172,12 @@ Spotify's proprietary fonts (the Circular family) aren't licensable for this pro
 - Circular icon buttons (50% radius)
 - The app's own logo/wordmark top-left in the accent green (an original mark — never Spotify's logo; see Branding & Legal)
 
+### Tooltip
+- Background: `#1f1f1f` (token `bg-surface-2`); text `#ffffff` (`text-text`) at 12px (`text-xs`)
+- Radius: 6px (`rounded-md`); padding ~8px × 4px (`px-2 py-1`); ~6px offset from the trigger
+- Elevation: Dialog shadow `rgba(0,0,0,0.5) 0px 8px 24px` (`shadow-dialog`, Level 3)
+- Use: hover/focus label for **icon-only** controls (player transport, like, header actions, modal close, the `md` sidebar rail). A pointer/keyboard affordance only — the control keeps its `aria-label`, so the tooltip is never the sole label. No accent.
+
 ## 5. Layout Principles
 
 ### Spacing System

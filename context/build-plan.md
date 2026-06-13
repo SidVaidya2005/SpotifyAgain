@@ -218,6 +218,66 @@ Ship the app live for the portfolio audience.
 - Seed/upload a few **public** demo songs so a logged-out visitor immediately sees and can play music.
 - Verify the deployed URL: anonymous browse + play, sign-in, upload, like, playlist all work end-to-end, and the UI renders correctly on phone, iPad (portrait + landscape), and desktop widths. Optionally commit a `render.yaml` blueprint.
 
+## Phase 9 — Post-v1 Enhancements
+
+> **Added 2026-06-13, after the 16/16 v1 build shipped and was live-verified.** Net-new
+> scope layered on the live app to raise it to portfolio quality — all `architecture.md`
+> invariants and RLS still apply; the only sanctioned design-doc change is
+> `DESIGN-spotify.md` §10 (feature 21). Features are listed in **build/commit order** (the
+> `V1: 1…5` commits on branch `post-v1-enhancements`); the trailing `(#n)` is the owner's
+> enhancement-area number. **All five are built; #20 (play bar) awaits a live check.** Full
+> per-feature detail is in `build-journal.md`.
+
+### 17 Portfolio links integration  (area #1)
+
+Recruiter-facing links to the author's GitHub, LinkedIn, email, and personal site — visible **without** signing in.
+
+**UI:**
+- `PortfolioLinks` presentational component (`variant: 'full' | 'compact'`): sidebar footer (full at `lg`, compact icon-rail at `md`) plus a mobile content footer (`md:hidden`, since the sidebar is hidden below `md`). External links use `target="_blank" rel="noopener noreferrer"`, email uses `mailto:`, color stays `text-muted` (no accent).
+
+**Logic:**
+- `PORTFOLIO_LINKS` centralized in `src/lib/constants.ts`. Player-bar clearance: `pb-24` on the sidebar `<aside>` so the footer clears the fixed player bar.
+
+### 18 Search default content  (area #2)
+
+Replace the empty `/search` prompt with useful content before any query is typed.
+
+**UI:**
+- Empty-query state renders a "Recently added" `<SongGrid>`; the query/results flow is unchanged.
+
+**Logic:**
+- `src/app/(site)/search/page.tsx` shows `(await getSongs()).slice(0, 12)` when the query is empty (RLS-scoped). `getSongs()` itself stays unbounded (Home shares it).
+
+### 19 Tooltips for discoverability  (area #3)
+
+Hover/focus labels on icon-only controls across the app.
+
+**UI:**
+- Reusable `Tooltip` (Radix, token-styled) on the header actions, player transport, like / add-to-playlist, playlist header actions, the `md` sidebar rail nav, and the modal close. `aria-label`s retained for touch/AT.
+
+**Logic:**
+- New approved dependency `@radix-ui/react-tooltip`; a single root `TooltipProvider` mounted in `layout.tsx`.
+
+### 20 Enhance the play bar  (area #5) — ⏳ live-verify pending
+
+Add Shuffle and replace the undefined "Remix" with "More like this" (by author).
+
+**UI:**
+- `PlayerContent` gains a Shuffle button (`FiShuffle`, accent when on) and a "More like this" button (`FiRadio`, `hidden sm:flex`), both tooltip-wrapped.
+
+**Logic:**
+- `use-player` gains `isShuffled` + `originalOrder` and `toggleShuffle` / `addToQueueAfterActive`; `setIds` reshuffles a newly-launched list when shuffle is on (persistent global toggle). `useMoreLikeThis` (browser-client) enqueues same-author songs after the current track and toasts; no auth gate.
+
+### 21 UI modernization v2  (area #4)
+
+Add depth and section separation across the shell — within the existing palette/geometry.
+
+**UI:**
+- Sticky translucent header (`bg-base/80` + `backdrop-blur` + soft seam) with the logo moved into it (left, all sizes); nav stays in the sidebar (its wordmark removed). Inline live-search dropdown in the header. Card hover-lift on `SongItem` (`-translate-y-1` + `shadow-card`). Subtle `surface→base` top gradient behind the content.
+
+**Logic:**
+- Design system evolved first: added **§10 "Modernization v2"** to `DESIGN-spotify.md` (authoritative for these). `HeaderSearch` + `useSearchSongs` (browser-client, RLS-scoped, limit 6) + shared `sanitizeSearchQuery` in `src/lib/search.ts` (reused by `src/server/search-songs.ts`); `top-fade` `@utility` in `globals.css`.
+
 ---
 
 ## Feature Count
@@ -232,4 +292,5 @@ Ship the app live for the portfolio audience.
 | Phase 6 — Playlists | 2 |
 | Phase 7 — Search | 1 |
 | Phase 8 — Deployment | 1 |
-| **Total** | **16** |
+| Phase 9 — Post-v1 Enhancements | 5 |
+| **Total** | **21** |

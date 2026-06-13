@@ -12,7 +12,7 @@
 | Framework | Next.js 16 (App Router) + React 19 | Routing, Server Components, Server Actions, Route Handlers |
 | Styling | Tailwind CSS v4 | Utility-first styling via `@import "tailwindcss"` |
 | Fonts | Figtree via `next/font/google` | Free geometric sans closest to Spotify's Circular; see `DESIGN-spotify.md` |
-| UI primitives | Radix UI (`react-dialog`, `react-slider`) | Accessible modal + slider primitives |
+| UI primitives | Radix UI (`react-dialog`, `react-slider`, `react-tooltip`) | Accessible modal, slider + tooltip primitives |
 | Icons | `react-icons` | Iconography |
 | Toasts | `sonner` | User-facing success/error notifications |
 | Database | Supabase Postgres | Persistent relational store with Row Level Security |
@@ -23,6 +23,7 @@
 | Client state | `zustand` v5 | Ephemeral player + modal/UI state |
 | Audio | `use-sound` (Howler) | Playback engine in the player bar |
 | Forms | `react-hook-form` | Upload + playlist forms |
+| Drag & drop | `@dnd-kit/*` (core, sortable, modifiers, utilities) | Reorder playlist tracks (pointer + touch + keyboard) |
 | Class utils | `clsx` + `tailwind-merge` | Conditional/merged className composition |
 | IDs | `uuid` | Unique Storage object paths |
 | Hosting | Render (Node Web Service) | Runs `next build` / `next start` on the platform `PORT` |
@@ -31,54 +32,71 @@
 
 ## Folder Structure
 
-> **Status — target, not current.** This is the structure to build toward; none of
-> these files exist yet. The repo currently holds only `CLAUDE.md`, `context/`,
-> `LICENSE`, and `README.md`. Create each file when the relevant `build-plan.md`
-> feature requires it; live build state is tracked in `progress-tracker.md`.
+> **Status — built and live.** The v1 app (16/16) plus the Phase 9 post-v1 enhancements are
+> built; the tree below reflects what is actually on disk (branch `post-v1-enhancements`). The
+> live deploy tracks `main`; build/branch state is in `progress-tracker.md`.
 
 ```
 SpotifyAgain/
 ├── CLAUDE.md                      → agent entry point, redirects here
 ├── context/                       → this documentation set (source of truth)
-│   └── DESIGN-spotify.md                  → UI/visual source of truth
-├── next.config.ts
-├── tailwind.config.ts             → Tailwind v4 (mostly CSS-driven)
+│   ├── project-overview.md · architecture.md · code-standards.md
+│   ├── DESIGN-spotify.md          → UI/visual source of truth (incl. §10 Modernization v2)
+│   ├── library-docs.md · build-plan.md · progress-tracker.md
+│   └── build-journal.md           → verbatim per-feature history (not read at session start)
+├── ui-registry.md                 → imprinted UI patterns (root)
+├── memory.md                      → latest session handoff (root, /remember)
+├── next.config.ts                 → Supabase Storage image host in images.remotePatterns
 ├── tsconfig.json                  → "@/*" path alias → src/*
-├── render.yaml                    → optional Render blueprint (build/start/env)
-├── .env.local                     → secrets, never committed
+├── render.yaml                    → Render blueprint (build/start/env)
+├── .nvmrc                         → Node 22 (pins Render's Node)
+├── .env.example                   → documents the NEXT_PUBLIC_* keys (.env.local is git-ignored)
+├── eslint.config.mjs · postcss.config.mjs
 ├── supabase/
-│   ├── migrations/                → SQL schema + RLS policies (source of truth for DB)
-│   └── seed.sql                   → optional dev/demo seed data (public songs)
-├── public/                        → static assets (logos, placeholder art)
+│   └── migrations/                → SQL schema + RLS + storage buckets (source of truth for DB)
+│       ├── 20260611202834_profiles_and_handle_new_user.sql
+│       └── 20260612015610_catalog_schema_and_storage.sql
+├── public/                        → static assets
 └── src/
     ├── proxy.ts                   → Next 16 request entry (was root middleware.ts): refreshes session, guards personal routes
     ├── app/
-    │   ├── layout.tsx             → root layout: providers + app shell
-    │   ├── globals.css            → @import "tailwindcss" + base styles
-    │   ├── (site)/                → main app route group (public + personal pages)
+    │   ├── layout.tsx             → root layout: providers + app shell (header, sidebar, player, top-gradient)
+    │   ├── globals.css            → @import "tailwindcss" + @theme tokens + @utility top-fade
+    │   ├── (site)/
     │   │   ├── page.tsx           → Home (public)
-    │   │   ├── search/page.tsx    → Search (public)
+    │   │   ├── search/page.tsx    → Search + "Recently added" default (public)
     │   │   ├── liked/page.tsx     → Liked Songs (auth required)
     │   │   ├── library/page.tsx   → user's uploaded songs (auth required)
     │   │   └── playlist/[id]/page.tsx → playlist detail (owner only)
     │   └── auth/callback/route.ts → OAuth code exchange
-    ├── components/                → reusable presentational + client components
-    │   ├── player/                → PlayerBar, PlayerContent, SeekSlider, VolumeSlider
-    │   ├── Sidebar.tsx, Header.tsx, SongItem.tsx, MediaItem.tsx, LikeButton.tsx …
-    │   └── modals/                → UploadModal, AuthModal, PlaylistModal
-    ├── providers/                 → ReactQueryProvider, ModalProvider, UserProvider, ToasterProvider
-    ├── hooks/                     → useUser, useLoadSongUrl, useLoadImage, useDebounce, useOnPlay
-    ├── stores/                    → Zustand stores: usePlayer, useUploadModal, useAuthModal …
-    ├── server/                    → server-only data fetchers (read) — Server Component use only
-    ├── actions/                   → "use server" Server Actions (writes/mutations)
+    ├── components/
+    │   ├── player/                → PlayerBar, PlayerContent (shuffle + more-like-this), SeekSlider, VolumeSlider
+    │   ├── modals/                → UploadModal, AuthModal, PlaylistModal, AddToPlaylistModal
+    │   ├── library/               → LibraryEmptyState, LibraryUploadButton
+    │   ├── playlist/              → PlaylistHeaderActions, PlaylistTrackList, PlaylistTrackRow
+    │   ├── Sidebar.tsx, BottomNav.tsx, Header.tsx, HeaderSearch.tsx, SearchInput.tsx
+    │   ├── SongGrid.tsx, SongItem.tsx (hover-lift), LikeButton.tsx, AddToPlaylistButton.tsx
+    │   └── Button.tsx, Modal.tsx, Tooltip.tsx, UserMenu.tsx, VisibilityBadge.tsx, PlaylistList.tsx, PortfolioLinks.tsx
+    ├── providers/                 → ReactQueryProvider, ModalProvider, UserProvider, ToasterProvider, TooltipProvider
+    ├── hooks/                     → useUser, useLoadSongUrl, useLoadImage, useDebounce, useOnPlay,
+    │                                useGetSongById, useLikedSongs, useToggleLike, useUserPlaylists,
+    │                                useSearchSongs, useMoreLikeThis
+    ├── stores/                    → use-player, use-upload-modal, use-auth-modal, use-playlist-modal, use-add-to-playlist-modal
+    ├── server/                    → get-songs, get-songs-by-user, get-liked-songs, get-playlist,
+    │                                get-playlist-songs, search-songs, require-user (read-only; Server Component use)
+    ├── actions/                   → create-song, toggle-like, create-playlist, rename-playlist, delete-playlist,
+    │                                add-song-to-playlist, remove-song-from-playlist, reorder-playlist ("use server")
     ├── lib/
+    │   ├── constants.ts           → STORAGE_BUCKETS, ACCEPTED_* types, PORTFOLIO_LINKS
+    │   ├── search.ts              → sanitizeSearchQuery (shared by server read + client hook)
+    │   ├── utils.ts               → cn() (clsx + tailwind-merge)
     │   └── supabase/
     │       ├── client.ts          → createClient() for browser/client components
     │       ├── server.ts          → createClient() for Server Components / Actions / Route Handlers
     │       └── middleware.ts      → updateSession() helper used by src/proxy.ts
     └── types/
         ├── database.types.ts      → generated Supabase types
-        └── index.ts               → domain types (Song, Playlist, …)
+        └── index.ts               → domain types (Song, Playlist, ActionResult, …)
 ```
 
 ---
@@ -409,20 +427,62 @@ export async function getSongs(): Promise<Song[]> {
 // src/stores/use-player.ts
 import { create } from 'zustand'
 
+// Pure module-scope helpers — no Supabase, no React.
+function shuffle(arr: string[]): string[] {            // Fisher–Yates on a copy
+  const out = [...arr]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
+// Insert newIds (de-duped) right after activeId; append if activeId is absent.
+function insertAfterActive(arr: string[], activeId: string | undefined, newIds: string[]): string[] {
+  const additions = newIds.filter((id) => !arr.includes(id))
+  if (additions.length === 0) return arr
+  const i = activeId ? arr.indexOf(activeId) : -1
+  if (i === -1) return [...arr, ...additions]
+  return [...arr.slice(0, i + 1), ...additions, ...arr.slice(i + 1)]
+}
+
+// Ephemeral playback state only — never holds Song objects, never calls Supabase.
 interface PlayerState {
-  ids: string[]            // the active queue
+  ids: string[]            // active queue, in play order (shuffled when isShuffled)
+  originalOrder: string[]  // unshuffled launch order, restored when shuffle turns off
   activeId?: string
+  isShuffled: boolean      // persistent global toggle
   setId: (id: string) => void
   setIds: (ids: string[]) => void
+  toggleShuffle: () => void
+  addToQueueAfterActive: (newIds: string[]) => void   // "more like this"
   reset: () => void
 }
 
 export const usePlayer = create<PlayerState>((set) => ({
   ids: [],
+  originalOrder: [],
   activeId: undefined,
+  isShuffled: false,
   setId: (id) => set({ activeId: id }),
-  setIds: (ids) => set({ ids }),
-  reset: () => set({ ids: [], activeId: undefined }),
+  // Launch a list: remember its natural order; reshuffle now if shuffle is on, so a
+  // newly-played list respects the current (persistent) shuffle state.
+  setIds: (ids) =>
+    set((state) => ({ originalOrder: ids, ids: state.isShuffled ? shuffle(ids) : ids })),
+  // On: snapshot order then shuffle. Off: restore it. activeId untouched → no reload.
+  toggleShuffle: () =>
+    set((state) =>
+      state.isShuffled
+        ? { isShuffled: false, ids: state.originalOrder }
+        : { isShuffled: true, originalOrder: state.ids, ids: shuffle(state.ids) },
+    ),
+  // Queue songs right after the current track — in both orders, so a later un-shuffle stays consistent.
+  addToQueueAfterActive: (newIds) =>
+    set((state) => ({
+      ids: insertAfterActive(state.ids, state.activeId, newIds),
+      originalOrder: insertAfterActive(state.originalOrder, state.activeId, newIds),
+    })),
+  reset: () => set({ ids: [], originalOrder: [], activeId: undefined, isShuffled: false }),
 }))
 ```
 

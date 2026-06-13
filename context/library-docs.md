@@ -330,7 +330,7 @@ function PlayerContent({ songUrl }: { songUrl: string }) {
 
 ---
 
-## Radix UI (Dialog + Slider)
+## Radix UI (Dialog + Slider + Tooltip)
 
 **Check first:** Radix Primitives docs for `@radix-ui/react-dialog` and `@radix-ui/react-slider`.
 
@@ -365,6 +365,56 @@ export function Modal({ open, onOpenChange, title, children }: {
 - All modals (upload, auth, playlist) wrap this `Modal` and drive `open`/`onOpenChange` from their Zustand store.
 - The seek and volume bars use `@radix-ui/react-slider`; keep them controlled from the player state.
 - Always render Dialog content inside `Dialog.Portal` and include a `Dialog.Title` for accessibility.
+
+### Tooltip (icon-only controls)
+
+```tsx
+// src/providers/TooltipProvider.tsx — one root Provider (Radix requires a single ancestor),
+// mounted in layout.tsx wrapping the shell + player so the shared delay applies app-wide.
+'use client'
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+
+export function TooltipProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <TooltipPrimitive.Provider delayDuration={300} skipDelayDuration={300}>
+      {children}
+    </TooltipPrimitive.Provider>
+  )
+}
+```
+
+```tsx
+// src/components/Tooltip.tsx — reusable wrapper for a single trigger
+'use client'
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+import { cn } from '@/lib/utils'
+
+export function Tooltip({ content, children, side = 'top', className }: {
+  content: string
+  children: React.ReactNode
+  side?: 'top' | 'right' | 'bottom' | 'left'
+  className?: string
+}) {
+  return (
+    <TooltipPrimitive.Root>
+      <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Portal>
+        <TooltipPrimitive.Content side={side} sideOffset={6}
+          className={cn('z-50 select-none rounded-md bg-surface-2 px-2 py-1 text-xs text-text shadow-dialog', className)}>
+          {content}
+        </TooltipPrimitive.Content>
+      </TooltipPrimitive.Portal>
+    </TooltipPrimitive.Root>
+  )
+}
+```
+
+**Rules:**
+
+- Mount the single `<TooltipProvider>` once in the root layout; every `<Tooltip>` must have it as an ancestor.
+- Use `<Tooltip content="…">{trigger}</Tooltip>` for **icon-only** controls; `Trigger asChild` wraps one child, which **keeps its own `aria-label`** — the tooltip is a pointer/keyboard affordance, never the only label (touch/AT fallback).
+- Pass `className` (e.g. `lg:hidden`) to scope a tooltip to a breakpoint, like the `md` sidebar rail. Style via tokens only (`bg-surface-2`, `text-xs`, `shadow-dialog`) per `DESIGN-spotify.md` §4.
+- Skip tooltips on touch-only surfaces (`BottomNav`) and on controls that already carry a visible label or open a menu.
 
 ---
 
