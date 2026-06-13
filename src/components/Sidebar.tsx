@@ -24,9 +24,11 @@ export function Sidebar() {
     : navItems
 
   // Full sidebar at lg+, icon rail at md, hidden below md (BottomNav takes over).
-  // Separated from the main area by the bg-surface/bg-base shade contrast — no gray border.
+  // Fixed between the header (top-16) and the player bar (bottom-24) — not full height
+  // (DESIGN §10.1); scrolls internally if the playlist list overflows. Separated from the
+  // main area by the bg-surface/bg-base shade contrast — no gray border.
   return (
-    <aside className="hidden w-64 flex-col bg-surface pb-24 md:flex md:w-24 lg:w-64">
+    <aside className="fixed left-0 top-16 bottom-24 z-20 hidden w-64 flex-col overflow-y-auto bg-surface md:flex md:w-24 lg:w-64">
       {/* Nav items (the wordmark now lives in the Header — DESIGN §10.1). */}
       <nav className="space-y-4 px-4 pt-6 lg:px-6">
         {items.map(({ label, href, icon: Icon }) => {

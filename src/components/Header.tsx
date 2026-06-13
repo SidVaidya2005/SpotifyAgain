@@ -21,7 +21,7 @@ export function Header() {
   // Pinned top bar (DESIGN §10.1): logo (left) · search · actions (right). The wordmark now
   // lives here (the sidebar dropped it); the translucent bg + soft seam add depth.
   return (
-    <header className="sticky top-0 z-30 flex shrink-0 items-center gap-2 bg-base/80 px-4 py-3 shadow-[0_1px_0_var(--color-surface)] backdrop-blur-md md:gap-4 md:px-6">
+    <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center gap-2 bg-base/80 px-4 shadow-[0_1px_0_var(--color-surface)] backdrop-blur-md md:gap-4 md:px-6">
       {/* App wordmark — the single home for the logo (all sizes). */}
       <Link href="/" className="shrink-0 text-lg font-bold text-accent md:text-xl">
         SpotifyAgain

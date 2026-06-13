@@ -35,7 +35,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={figtree.variable}>
-      <body className="flex h-dvh flex-col">
+      <body className="h-dvh overflow-hidden">
         <UserProvider initialUser={user}>
           {/* React Query wraps the whole tree so both the grid (in <main>) and the
               layout-mounted PlayerBar share one liked-songs cache. */}
@@ -43,26 +43,27 @@ export default async function RootLayout({
             <TooltipProvider>
               <ToasterProvider />
               <ModalProvider />
-              <div className="flex flex-1 overflow-hidden">
-                <Sidebar />
-                <div className="flex flex-1 flex-col overflow-hidden">
-                  <Header />
-                  <main className="relative flex-1 overflow-y-auto pb-48 md:pb-24">
-                    {/* Subtle top-of-content gradient for depth (DESIGN §10.4). */}
-                    <div
-                      aria-hidden
-                      className="top-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-48"
-                    />
-                    {children}
-                    {/* Author/portfolio links for mobile, where the sidebar (which
-                        carries them md+) is hidden. Sits at the end of the scrollable
-                        content; the pb-48 above keeps it clear of the player + BottomNav. */}
-                    <div className="mt-12 px-6 md:hidden">
-                      <PortfolioLinks variant="full" className="items-center text-center" />
-                    </div>
-                  </main>
+              {/* Fixed app-shell (DESIGN §10.1): the Header (full-width top), Sidebar (left,
+                  inset between header & player), and PlayerBar (bottom) are all fixed — only
+                  <main> scrolls, so the chrome never moves on scroll. main is offset by the
+                  header height (top-16), sidebar width (md:left-24 / lg:left-64), and player
+                  height (bottom-24); pb-28 clears the mobile BottomNav. */}
+              <Header />
+              <Sidebar />
+              <main className="fixed inset-x-0 top-16 bottom-24 overflow-y-auto pb-28 md:left-24 md:pb-6 lg:left-64">
+                {/* Subtle top-of-content gradient for depth (DESIGN §10.4). */}
+                <div
+                  aria-hidden
+                  className="top-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-48"
+                />
+                {children}
+                {/* Author/portfolio links for mobile, where the sidebar (which carries them
+                    md+) is hidden. Sits at the end of the scrollable content; the pb-28 above
+                    keeps it clear of the BottomNav. */}
+                <div className="mt-12 px-6 md:hidden">
+                  <PortfolioLinks variant="full" className="items-center text-center" />
                 </div>
-              </div>
+              </main>
               <PlayerBar />
               <BottomNav />
             </TooltipProvider>

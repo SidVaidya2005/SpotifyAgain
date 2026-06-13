@@ -294,20 +294,26 @@ values below describe the intent.
 > brand colors, green stays functional, all values are existing `@theme` tokens.** This
 > section is authoritative for the header, card depth, search dropdown, and section rhythm.
 
-### 10.1 Sticky header / top bar
+### 10.1 Fixed top bar + app-shell
 
-A slim bar pinned at the top of the content column (above the scrolling content), present
-on every page.
+A full-width bar **fixed across the very top of the viewport** (spanning above the sidebar),
+present on every page. It anchors a fully **fixed app-shell**: header (top, full width) → a row of
+[ sidebar | scrolling content ] → player bar (bottom, full width). **Only the main content
+scrolls;** the header, sidebar, and player bar are all `fixed` and never move (no scroll "jiggle").
 
-- **Layout:** logo/wordmark **left** (the app's green wordmark, all sizes) · **search**
-  (center-left, takes available width) · **actions right** (upload, create-playlist, avatar/
-  Log in). The sidebar keeps the primary nav; the wordmark now lives **only** in the header.
-- **Surface (depth):** translucent **`bg-base/70` + `backdrop-blur-md`** so content scrolls
-  faintly beneath it; separated from content by a **soft bottom seam** (a 1px inset shadow in
-  `--color-base`/surface — **never a raw gray border**, DESIGN §7), not a visible line.
-- **Padding/height:** `px-4 md:px-6`, compact vertical (`py-3`); stays a single row at all
-  widths. On mobile the search input shrinks but remains a usable pill (does not collapse to
-  an icon).
+- **Shell positions:** header `fixed` top, full width, fixed height (`h-16`). Sidebar `fixed` on
+  the left, **inset between the header and the player bar** (top = header height `top-16`, bottom =
+  player height `bottom-24`) — **not full height**; it scrolls internally if its playlists overflow.
+  Player bar `fixed` full-width bottom (`h-24`). Main is the only scroll region, offset by the header
+  (top), the sidebar width (left, `md+`), and the player / bottom-nav (bottom).
+- **Layout (within the header):** logo/wordmark **left** (the app's green wordmark, all sizes) ·
+  **search** (center-left, takes available width) · **actions right** (upload, create-playlist,
+  avatar / Log in). The sidebar keeps the primary nav; the wordmark lives **only** in the header.
+- **Surface (depth):** translucent **`bg-base/80` + `backdrop-blur-md`** so content scrolls faintly
+  beneath it; separated from content by a **soft bottom seam** (a 1px inset shadow in
+  `--color-surface` — **never a raw gray border**, DESIGN §7), not a visible line.
+- **Padding/height:** fixed `h-16`, `px-4 md:px-6`; a single row at all widths. On mobile the search
+  input shrinks but stays a usable pill (does not collapse to an icon).
 
 ### 10.2 Search input + live dropdown
 
