@@ -141,13 +141,14 @@ export type ActionResult<T = void> = { data: T } | { error: string }
 ```typescript
 // src/server/search-songs.ts
 import { createClient } from '@/lib/supabase/server'
+import { sanitizeSearchQuery } from '@/lib/search'
 import type { Song } from '@/types'
 
 export async function searchSongs(query: string): Promise<Song[]> {
   const supabase = await createClient()
-  // Strip characters that have meaning in PostgREST's filter grammar ( , ( ) * : " \ )
-  // and escape ilike wildcards (% _), so user input can't break or extend the .or() filter.
-  const q = query.replace(/[,()*:"\\]/g, ' ').replace(/[%_]/g, '\\$&').trim()
+  // Sanitize before interpolating into the .or() filter (see lib/search.ts) — one source
+  // of truth shared with the client live-search hook (useSearchSongs).
+  const q = sanitizeSearchQuery(query)
   if (!q) return []
 
   const { data, error } = await supabase
@@ -167,7 +168,7 @@ export async function searchSongs(query: string): Promise<Song[]> {
 
 - Reads return the data (or `[]`/`null` on error) and **log** the error; they never throw to the page.
 - Reads never mutate and never run on the client.
-- When interpolating user input into a PostgREST filter string (`.or()` / `.filter()`), **sanitize it first** — strip filter-grammar control characters (`, ( ) * : " \`) and escape `ilike` wildcards (`% _`) — so input can't break or extend the filter (see `searchSongs`).
+- When interpolating user input into a PostgREST filter string (`.or()` / `.filter()`), **sanitize it first** with the shared `sanitizeSearchQuery` helper in `src/lib/search.ts` — it strips filter-grammar control characters (`, ( ) * : " \`) and escapes `ilike` wildcards (`% _`) so input can't break or extend the filter. Both the server read (`searchSongs`) and the client live-search hook (`useSearchSongs`) call it, keeping the rule in one place.
 
 ### Server Action (mutation)
 
@@ -293,10 +294,16 @@ export const STORAGE_BUCKETS = {
 
 export const ACCEPTED_AUDIO_TYPES = ['audio/mpeg'] as const   // .mp3
 export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
+
+// Author/portfolio links surfaced in the app shell (sidebar + mobile footer); `email`
+// is a mailto:, the rest are external https opened in a new tab.
+export const PORTFOLIO_LINKS = {
+  github: '…', linkedin: '…', email: 'mailto:…', website: '…',
+} as const
 ```
 
-Reference bucket names and accepted upload types from here — never inline the
-string literals.
+Reference bucket names, accepted upload types, and the portfolio links from here —
+never inline the string literals.
 
 ---
 

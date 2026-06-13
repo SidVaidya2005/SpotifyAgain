@@ -29,21 +29,23 @@ with no signup wall, then see the depth (auth, uploads, playlists) on demand.
 ## Pages
 
 - **Home (`/`)** — landing grid of recently uploaded public songs and shortcuts; the default view for everyone, signed in or not.
-- **Search (`/search`)** — debounced search across public songs by title and author, with playable results; open to everyone.
+- **Search (`/search`)** — debounced search across public songs by title and author, with playable results; shows a "recently added" grid before any query; open to everyone. A global header live-search dropdown offers the same from any page.
 - **Liked Songs (`/liked`)** — the signed-in user's liked tracks as a playable list; **requires sign-in**.
 - **Library (`/library`)** — songs the current user has uploaded (public and private), plus the upload entry point; **requires sign-in**.
 - **Playlist (`/playlist/[id]`)** — a single playlist's tracks with add/remove/reorder controls; **owner only**.
 - **Auth callback (`/auth/callback`)** — OAuth code-exchange route; not a user-facing page.
 
-The persistent **player bar** and **sidebar** are part of the app shell and
-appear on every page, signed in or not.
+A persistent **top header** (logo · global search · actions), the **player bar**,
+and the **sidebar** are part of the app shell and appear on every page, signed in
+or not.
 
 ## Navigation
 
 The left **sidebar** is the primary navigation: Home, Search, and (when signed
-in) the user's Library / playlists. The **player bar** is pinned to the bottom of
-every page and never unmounts during navigation, so playback continues as the
-user moves around. An unauthenticated visitor can browse Home and Search and play
+in) the user's Library / playlists. A **top header** carries the logo, a global
+live-search box (results drop down and play in place), and the upload / create /
+account actions. The **player bar** is pinned to the bottom of every page and
+never unmounts during navigation, so playback continues as the user moves around. An unauthenticated visitor can browse Home and Search and play
 any public song freely; the app only prompts Google sign-in when they try a
 protected action (upload, like, create playlist) or open a personal page (Liked
 Songs, Library, a playlist). After signing in they return to where they were.
@@ -76,8 +78,9 @@ only in the uploader's library.
 
 The user clicks any song they can see. It becomes the active track in the player
 store, the bottom player loads the audio from Storage, and playback starts. They
-can pause/seek/adjust volume and skip to the next/previous track in the active
-queue — all without leaving the page.
+can pause/seek/adjust volume, skip to the next/previous track in the active queue,
+toggle **shuffle**, and queue **more songs by the same author** ("more like this")
+— all without leaving the page.
 
 ### Organize
 
@@ -87,9 +90,10 @@ scoped to that user.
 
 ### Find
 
-From Search, anyone types a query; results filter by song title and author after
-a short debounce. Any visible result can be played; signed-in users can also add
-it to a playlist.
+From the header's global search box or the Search page, anyone types a query;
+results filter by song title and author after a short debounce (the Search page
+also shows recently-added songs before any query). Any visible result can be
+played; signed-in users can also add it to a playlist.
 
 ## Data Architecture
 
@@ -116,14 +120,16 @@ capture each signed-in user's private organization of the catalog.
 - Google OAuth sign-in / sign-out; browsing and playback are open to everyone, creator actions require a session.
 - Upload songs: MP3 + cover image + title/author + **public/private visibility** → Supabase Storage + `songs` row.
 - Per-song visibility: each uploader marks a song public (everyone) or private (only them).
-- Persistent bottom player: play/pause, seek, volume, next/previous.
+- Persistent bottom player: play/pause, seek, volume, next/previous, shuffle, and "more like this" (queue more songs by the current track's author).
 - Play queue derived from the list a song was launched from.
 - Like / unlike songs and a Liked Songs page (signed in).
 - Personal Library page of the user's uploaded songs (signed in).
 - Playlists: create, rename, delete; add/remove/reorder tracks; playlist detail page (signed in).
-- Search public songs by title and author with debounced results.
-- Responsive layout with sidebar + player shell, per `DESIGN-spotify.md`.
-- Deployable to Render as a Node Web Service (live at a public URL once shipped).
+- Search public songs by title and author with debounced results — a global header live-search dropdown plus a `/search` page that defaults to recently-added songs.
+- Responsive layout with header + sidebar + player shell, per `DESIGN-spotify.md`.
+- Recruiter-facing portfolio links (GitHub, LinkedIn, email, personal site) in the app shell, visible without an account.
+- Hover/focus tooltips on icon-only controls for discoverability.
+- Deployed to Render as a Node Web Service — **live** at https://spotifyagain.onrender.com.
 
 ## Features Out of Scope
 

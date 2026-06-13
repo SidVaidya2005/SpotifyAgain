@@ -34,7 +34,7 @@ writing any code**, and keep it current as you work. Read in this order:
 - `npm run lint` — run ESLint
 - `npx supabase db push` — apply SQL migrations in `supabase/migrations/` to the linked project
 
-Targets **Render** for deployment as a Node Web Service (build `npm install && npm run build`, start `npm run start`, binds to `PORT`) — not yet deployed; live build status is in `context/progress-tracker.md`. See `context/architecture.md` → Deployment.
+Targets **Render** as a Node Web Service (build `npm install && npm run build`, start `npm run start`, binds to `PORT`) — **deployed and live** at https://spotifyagain.onrender.com; build/branch status is in `context/progress-tracker.md`. See `context/architecture.md` → Deployment.
 
 ## Tooling (MCP)
 
