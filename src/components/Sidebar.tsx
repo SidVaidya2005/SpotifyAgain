@@ -27,14 +27,8 @@ export function Sidebar() {
   // Separated from the main area by the bg-surface/bg-base shade contrast — no gray border.
   return (
     <aside className="hidden w-64 flex-col bg-surface pb-24 md:flex md:w-24 lg:w-64">
-      {/* Wordmark */}
-      <div className="flex items-center justify-center px-6 py-8 lg:justify-start">
-        <span className="hidden text-2xl font-bold text-accent lg:block">SpotifyAgain</span>
-        <span className="text-2xl font-bold text-accent lg:hidden">♫</span>
-      </div>
-
-      {/* Nav items */}
-      <nav className="space-y-4 px-4 lg:px-6">
+      {/* Nav items (the wordmark now lives in the Header — DESIGN §10.1). */}
+      <nav className="space-y-4 px-4 pt-6 lg:px-6">
         {items.map(({ label, href, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + '/')
           return (

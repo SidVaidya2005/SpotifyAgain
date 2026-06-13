@@ -47,7 +47,12 @@ export default async function RootLayout({
                 <Sidebar />
                 <div className="flex flex-1 flex-col overflow-hidden">
                   <Header />
-                  <main className="flex-1 overflow-y-auto pb-48 md:pb-24">
+                  <main className="relative flex-1 overflow-y-auto pb-48 md:pb-24">
+                    {/* Subtle top-of-content gradient for depth (DESIGN §10.4). */}
+                    <div
+                      aria-hidden
+                      className="top-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-48"
+                    />
                     {children}
                     {/* Author/portfolio links for mobile, where the sidebar (which
                         carries them md+) is hidden. Sits at the end of the scrollable

@@ -280,3 +280,62 @@ values below describe the intent.
 4. Uppercase + wide tracking on buttons — the systematic label voice
 5. Heavy shadows (0.3–0.5 opacity) for elevation — light shadows are invisible on dark
 6. Album art provides all the color — the UI stays achromatic
+
+## 10. Modernization v2 — Sticky Header, Card Depth & Section Rhythm
+
+> **Added 2026-06-13** (enhancement #4). Evolves the visual layer toward more depth and
+> clearer section separation while staying inside the existing palette/geometry — **no new
+> brand colors, green stays functional, all values are existing `@theme` tokens.** This
+> section is authoritative for the header, card depth, search dropdown, and section rhythm.
+
+### 10.1 Sticky header / top bar
+
+A slim bar pinned at the top of the content column (above the scrolling content), present
+on every page.
+
+- **Layout:** logo/wordmark **left** (the app's green wordmark, all sizes) · **search**
+  (center-left, takes available width) · **actions right** (upload, create-playlist, avatar/
+  Log in). The sidebar keeps the primary nav; the wordmark now lives **only** in the header.
+- **Surface (depth):** translucent **`bg-base/70` + `backdrop-blur-md`** so content scrolls
+  faintly beneath it; separated from content by a **soft bottom seam** (a 1px inset shadow in
+  `--color-base`/surface — **never a raw gray border**, DESIGN §7), not a visible line.
+- **Padding/height:** `px-4 md:px-6`, compact vertical (`py-3`); stays a single row at all
+  widths. On mobile the search input shrinks but remains a usable pill (does not collapse to
+  an icon).
+
+### 10.2 Search input + live dropdown
+
+- **Input:** pill (`rounded-full`), `bg-surface-2`, `shadow-inset-border` (DESIGN §4 Inputs),
+  a leading search icon, `text-text` / `placeholder:text-muted`.
+- **Dropdown panel:** `bg-surface`, `rounded-lg`, `shadow-dialog` (Level 3), anchored under
+  the input; max-height with internal scroll.
+- **Result row:** ~40px square cover (`rounded`), title (`text-sm font-bold text-text`) +
+  author (`text-xs text-muted`); hover `bg-surface-2`. A footer row **"Show all results"**
+  routes to `/search`.
+- States: empty input → no panel; query with no matches → a muted "No results" row.
+
+### 10.3 Card depth (hover-lift)
+
+Elevates the grid cards (`SongItem`) so the grid reads with more dimension:
+
+- **Resting:** `bg-card` (unchanged), `rounded-lg`.
+- **Hover:** `bg-card-2` **+ `-translate-y-1` lift + `shadow-card`** (Level 2), smooth
+  `transition`. The existing hover circular-play / like / add-to-playlist overlays are kept.
+
+### 10.4 Section rhythm & top gradient
+
+- **Section headings:** each page section opens with a **Feature Heading** (18px / 600,
+  `text-lg font-semibold`) or **Section Title** (24px / 700) and is separated by generous
+  vertical spacing (`space-y-8` rhythm) — separation through space + heading weight, not gray
+  rules.
+- **Top gradient:** a subtle achromatic band at the very top of the main content —
+  `linear-gradient(to bottom, var(--color-surface), transparent)` (i.e. `from-surface
+  to-base`/transparent), low height (~160–200px), behind the content. Adds atmosphere/depth;
+  **never tinted with the accent or any new color.**
+
+### 10.5 Guardrails (unchanged)
+
+- Green only on play/active/CTA. No raw gray borders — use shade/shadow/seam. Compact type
+  (10–24px). Pill/circle geometry. Heavy shadows for elevation. Responsive contract
+  (`code-standards.md` → Visual Design) still holds: sidebar rail/full, grid 1→2→3→4→5,
+  player bar fixed full-width.

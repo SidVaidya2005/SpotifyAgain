@@ -1,11 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { sanitizeSearchQuery } from '@/lib/search'
 import type { Song } from '@/types'
 
 export async function searchSongs(query: string): Promise<Song[]> {
   const supabase = await createClient()
-  // Strip characters that have meaning in PostgREST's filter grammar ( , ( ) * : " \ )
-  // and escape ilike wildcards (% _), so user input can't break or extend the .or() filter.
-  const q = query.replace(/[,()*:"\\]/g, ' ').replace(/[%_]/g, '\\$&').trim()
+  // Sanitize before interpolating into the .or() filter (see lib/search.ts).
+  const q = sanitizeSearchQuery(query)
   if (!q) return []
 
   const { data, error } = await supabase

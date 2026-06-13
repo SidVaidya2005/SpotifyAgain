@@ -53,3 +53,9 @@ body {
   @apply bg-base text-text;
   font-family: var(--font-sans);
 }
+
+/* Subtle achromatic top-of-content gradient (DESIGN §10.4) — adds depth/atmosphere at the
+   top of the scroll area. Never tinted with the accent or any new color. */
+@utility top-fade {
+  background-image: linear-gradient(to bottom, var(--color-surface), transparent);
+}

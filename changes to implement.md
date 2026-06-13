@@ -25,7 +25,7 @@
 | 1 | Portfolio links placement | **Sidebar footer (desktop) + mobile content footer** (sidebar is hidden < `md`) — ✅ **built 2026-06-13** |
 | 2 | Search default content | **Recently-added songs** via `getSongs()` (real data, no schema change) — ✅ **built 2026-06-13** |
 | 3 | Tooltips | **`@radix-ui/react-tooltip`**, broad scope (all icon-only controls) — ✅ **built 2026-06-13** |
-| 4 | UI modernization scope | **Evolve the design system first** — update `DESIGN-spotify.md`, then implement to match |
+| 4 | UI modernization scope | **Evolve the design system first** (added `DESIGN-spotify.md` §10), then implement — ✅ **built + owner-verified 2026-06-13** |
 | 5 | "Remix" button | **Replace with "More like this" by author** + Shuffle — ✅ **built 2026-06-13** (⏳ live verify pending) |
 
 ## Portfolio URLs (provided — verified 2026-06-13)
@@ -136,36 +136,41 @@ clean; owner visually confirmed tooltips on hover/focus.
 
 ---
 
-## 4. Modernize the overall UI
+## 4. Modernize the overall UI ✅ DONE (2026-06-13, owner-verified)
 
-**Decision:** **evolve the design system first.** Because `DESIGN-spotify.md` is the
-locked visual source of truth and the invariants forbid inventing visual design, the
-**first task is to update that file** with the new direction; implementation then
-matches the doc. This is the largest area — sequence it after the quick wins.
+**Built on branch `post-v1-enhancements`** (not yet committed). `npm run lint` +
+`npx tsc --noEmit` clean; headless: `/` + `/search` 200 with the new header search +
+top gradient, `/library` still gates. **Owner visually confirmed ("everything looks fine").**
 
-**Plan — Step A: update `DESIGN-spotify.md`**
-- [ ] Specify the **sticky top navigation**: left logo/name, center-left search bar,
-      right login/profile + actions; responsive collapse rules.
-- [ ] Specify the refreshed **visual hierarchy**: spacing scale, typography roles,
-      card layout, borders/shadows, hover/active states — staying Spotify-inspired but
-      original (per the branding/legal note).
-- [ ] Add any new `@theme` tokens required, in `architecture.md` → Key Patterns.
+**Decision:** **evolved the design system first** — added **§10 "Modernization v2"** to
+`DESIGN-spotify.md` (sticky header, search dropdown, card hover-lift, section rhythm, top
+gradient; all existing tokens, no new colors), then implemented to match. Direction =
+**"add depth & separation."**
 
-**Plan — Step B: implement to match**
-- [ ] Convert `Header.tsx` to a fixed/sticky top bar; integrate a persistent search bar
-      that routes to `/search?q=` (reuse the URL-driven `SearchInput` contract; the
-      `/search` page stays the source of truth). Collapse search to an icon < `md`.
-- [ ] Apply the new spacing / type / card / hover-active treatments across `SongItem`,
-      `SongGrid`, sidebar, modals.
-- [ ] Re-verify responsiveness at 375 / 768 / 1024 / 1440 (sidebar rail/full, grid
-      1→2→3→4→5, player bar fixed full-width) — the layout contract in
-      `code-standards.md` must still hold.
+**Step A — `DESIGN-spotify.md`**
+- [x] Added §10: sticky header spec, live-search dropdown, card hover-lift, section rhythm,
+      subtle `surface→base` top gradient, guardrails (green functional-only, no gray borders).
+
+**Step B — implemented** (owner-chosen specifics, some changed from the first sketch)
+- [x] **Header layout:** logo moved **into the header** (left, all sizes); **nav stays in the
+      sidebar** (sidebar wordmark removed). Header = logo · search · actions; restyled sticky
+      (`bg-base/80` + `backdrop-blur` + soft seam). `Header.tsx`, `Sidebar.tsx`.
+- [x] **Header search = inline live dropdown** (owner-chosen, **not** route-only): new
+      `src/components/HeaderSearch.tsx` + `src/hooks/useSearchSongs.ts` (browser-client,
+      RLS-scoped, limit 6) + shared `src/lib/search.ts` `sanitizeSearchQuery` (also reused by
+      `src/server/search-songs.ts`). Click a result → plays (queue = results); Enter / "Show
+      all results" → `/search?q=`; closes on outside-click/Escape. `useDebounce` reused.
+- [x] **Card depth:** `SongItem` hover-lift (`-translate-y-1` + `shadow-card` + `bg-card-2`).
+- [x] **Top gradient:** `top-fade` `@utility` in `globals.css`; mounted behind the top of
+      `<main>` (`layout.tsx`).
+- [x] Re-verify responsive 375/768/1024/1440 — owner confirmed; layout contract holds.
 
 **Tradeoffs / notes**
-- Moving search into a persistent header is an **IA change** (today search is a page you
-  navigate to). Keep `/search` working for shareable URLs and the default browse view (#2).
-- A persistent header competes for vertical space with the fixed player bar on small
-  screens — validate the mobile layout carefully.
+- Header search is a global live dropdown; `/search` keeps its own `SearchInput` + "Recently
+  added" default (mild redundancy on `/search`, accepted; shareable URLs preserved).
+- Mobile signed-in density (logo + search + create + upload + avatar at 375px) is tight by
+  design — owner confirmed acceptable; the search bar shrinks but stays usable.
+- Follow-up: `/imprint` the new header / card-lift / search-dropdown patterns.
 
 ---
 
@@ -216,8 +221,11 @@ track's author). Algorithmic radio/recs stay out of scope; author-based queueing
 2. ~~**#2 Search default**~~ — ✅ **done (2026-06-13)**.
 3. ~~**#3 Tooltips**~~ — ✅ **done (2026-06-13)**.
 4. ~~**#5 Play bar**~~ — ✅ **built (2026-06-13)** · ⏳ live verify pending.
-5. **#4 UI modernization** — largest; design-doc update → implement. ← **next**
+5. ~~**#4 UI modernization**~~ — ✅ **done + owner-verified (2026-06-13)**.
 
-> Each numbered area should be built **one fully before the next** (code-standards), and
-> `progress-tracker.md` updated as they complete. None of these are committed yet — the
-> owner controls doc/feature commits.
+> **All 5 enhancement areas are built.** #1–#4 owner-verified; **#5 awaits a live check**
+> (see §5 "Verify later"). Each was built one-at-a-time per `code-standards`. None committed
+> yet — the owner controls doc/feature commits.
+>
+> **Open follow-ups:** live-verify #5 · `/imprint` the new components · make the GitHub repo
+> **public** (the portfolio link 404s until then) · update `progress-tracker.md` · commit the branch.
