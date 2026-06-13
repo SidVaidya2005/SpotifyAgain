@@ -19,7 +19,7 @@
 | # | Change | Status |
 | --- | ------ | ------ |
 | 1+5 | Fixed app-shell + full-width header | ✅ **done — user-verified live** |
-| 2 | Personal nav items prompt sign-in (anon) | 🔨 **next** — approach set, **code not yet written** |
+| 2 | Personal nav items prompt sign-in (anon) | ✅ **done — user-verified live** |
 | 3 | Remove duplicate search bar on `/search` | ⬜ pending |
 | 4 | Stronger hover feedback (green glow) | ⬜ pending |
 
@@ -52,7 +52,7 @@ server (2026-06-13).
 
 ---
 
-## 2 — Personal nav items prompt sign-in when logged out  🔨 NEXT (code not yet written)
+## 2 — Personal nav items prompt sign-in when logged out  ✅ DONE (user-verified)
 
 **Problem:** the sidebar + bottom nav show **Library** to logged-out users, but clicking it silently
 redirects home — feels broken. (Liked Songs is currently hidden for anon.)
@@ -69,6 +69,11 @@ bottom nav; clicking either while logged out **opens the sign-in modal** instead
 - No new deps; no store/RLS changes.
 
 **Touches:** `Sidebar.tsx`, `BottomNav.tsx`.
+
+**Done (2026-06-13):** both files now map over a 4-item `navItems` with a `requiresAuth` flag; for
+`requiresAuth && !user` they render a sign-in-modal `<button>` (same className / tooltip / aria) instead
+of `<Link>`. `AuthModal` + store untouched (return-where-you-were). lint + `tsc` clean; **user-verified
+live** (2026-06-13).
 
 ---
 
@@ -110,6 +115,6 @@ to `/search?q=`). The page keeps its `Search` heading + recently-added/results b
 ## Build order
 
 1. ✅ **#1+#5 fixed shell** — done (user-verified).
-2. 🔨 **#2 anon sign-in prompt** — next.
+2. ✅ **#2 anon sign-in prompt** — done (user-verified).
 3. ⬜ **#3 search dedupe.**
 4. ⬜ **#4 hover green glow.**
