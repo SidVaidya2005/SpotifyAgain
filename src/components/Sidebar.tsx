@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { FiHome, FiSearch, FiMusic, FiHeart } from 'react-icons/fi'
 import { useUser } from '@/hooks/useUser'
 import { PlaylistList } from '@/components/PlaylistList'
+import { PortfolioLinks } from '@/components/PortfolioLinks'
 
 const navItems = [
   { label: 'Home', href: '/', icon: FiHome },
@@ -24,7 +25,7 @@ export function Sidebar() {
   // Full sidebar at lg+, icon rail at md, hidden below md (BottomNav takes over).
   // Separated from the main area by the bg-surface/bg-base shade contrast — no gray border.
   return (
-    <aside className="hidden w-64 flex-col bg-surface md:flex md:w-24 lg:w-64">
+    <aside className="hidden w-64 flex-col bg-surface pb-24 md:flex md:w-24 lg:w-64">
       {/* Wordmark */}
       <div className="flex items-center justify-center px-6 py-8 lg:justify-start">
         <span className="hidden text-2xl font-bold text-accent lg:block">SpotifyAgain</span>
@@ -55,6 +56,14 @@ export function Sidebar() {
 
       {/* The user's playlists (signed-in only); hidden for anon. */}
       <PlaylistList />
+
+      {/* Author/portfolio links pinned to the bottom — mt-auto keeps them at the
+          base whether or not PlaylistList renders (it returns null for anon).
+          Full credit + icons on the lg sidebar; icons-only on the md rail. */}
+      <div className="mt-auto px-4 py-6 lg:px-6">
+        <PortfolioLinks variant="full" className="hidden lg:flex" />
+        <PortfolioLinks variant="compact" className="items-center lg:hidden" />
+      </div>
     </aside>
   )
 }

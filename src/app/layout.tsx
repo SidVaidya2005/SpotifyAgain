@@ -9,6 +9,7 @@ import { ToasterProvider } from '@/providers/ToasterProvider'
 import { Sidebar } from '@/components/Sidebar'
 import { Header } from '@/components/Header'
 import { BottomNav } from '@/components/BottomNav'
+import { PortfolioLinks } from '@/components/PortfolioLinks'
 import { PlayerBar } from '@/components/player/PlayerBar'
 
 const figtree = Figtree({ subsets: ['latin'], variable: '--font-sans', display: 'swap' })
@@ -46,6 +47,12 @@ export default async function RootLayout({
                 <Header />
                 <main className="flex-1 overflow-y-auto pb-48 md:pb-24">
                   {children}
+                  {/* Author/portfolio links for mobile, where the sidebar (which
+                      carries them md+) is hidden. Sits at the end of the scrollable
+                      content; the pb-48 above keeps it clear of the player + BottomNav. */}
+                  <div className="mt-12 px-6 md:hidden">
+                    <PortfolioLinks variant="full" className="items-center text-center" />
+                  </div>
                 </main>
               </div>
             </div>
