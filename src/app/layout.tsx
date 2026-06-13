@@ -6,9 +6,11 @@ import { UserProvider } from '@/providers/UserProvider'
 import { ReactQueryProvider } from '@/providers/ReactQueryProvider'
 import { ModalProvider } from '@/providers/ModalProvider'
 import { ToasterProvider } from '@/providers/ToasterProvider'
+import { TooltipProvider } from '@/providers/TooltipProvider'
 import { Sidebar } from '@/components/Sidebar'
 import { Header } from '@/components/Header'
 import { BottomNav } from '@/components/BottomNav'
+import { PortfolioLinks } from '@/components/PortfolioLinks'
 import { PlayerBar } from '@/components/player/PlayerBar'
 
 const figtree = Figtree({ subsets: ['latin'], variable: '--font-sans', display: 'swap' })
@@ -38,19 +40,32 @@ export default async function RootLayout({
           {/* React Query wraps the whole tree so both the grid (in <main>) and the
               layout-mounted PlayerBar share one liked-songs cache. */}
           <ReactQueryProvider>
-            <ToasterProvider />
-            <ModalProvider />
-            <div className="flex flex-1 overflow-hidden">
-              <Sidebar />
-              <div className="flex flex-1 flex-col overflow-hidden">
-                <Header />
-                <main className="flex-1 overflow-y-auto pb-48 md:pb-24">
-                  {children}
-                </main>
+            <TooltipProvider>
+              <ToasterProvider />
+              <ModalProvider />
+              <div className="flex flex-1 overflow-hidden">
+                <Sidebar />
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  <Header />
+                  <main className="relative flex-1 overflow-y-auto pb-48 md:pb-24">
+                    {/* Subtle top-of-content gradient for depth (DESIGN §10.4). */}
+                    <div
+                      aria-hidden
+                      className="top-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-48"
+                    />
+                    {children}
+                    {/* Author/portfolio links for mobile, where the sidebar (which
+                        carries them md+) is hidden. Sits at the end of the scrollable
+                        content; the pb-48 above keeps it clear of the player + BottomNav. */}
+                    <div className="mt-12 px-6 md:hidden">
+                      <PortfolioLinks variant="full" className="items-center text-center" />
+                    </div>
+                  </main>
+                </div>
               </div>
-            </div>
-            <PlayerBar />
-            <BottomNav />
+              <PlayerBar />
+              <BottomNav />
+            </TooltipProvider>
           </ReactQueryProvider>
         </UserProvider>
       </body>

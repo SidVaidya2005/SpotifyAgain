@@ -10,6 +10,7 @@ import { usePlaylistModal } from '@/stores/use-playlist-modal'
 import { deletePlaylist } from '@/actions/delete-playlist'
 import { Modal } from '@/components/Modal'
 import { Button } from '@/components/Button'
+import { Tooltip } from '@/components/Tooltip'
 
 interface PlaylistHeaderActionsProps {
   id: string
@@ -44,29 +45,35 @@ export function PlaylistHeaderActions({ id, title }: PlaylistHeaderActionsProps)
   return (
     <>
       <div className="flex shrink-0 items-center gap-2">
-        <Link
-          href="/search"
-          aria-label="Add songs"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-accent"
-        >
-          <FiPlus className="h-5 w-5" />
-        </Link>
-        <button
-          type="button"
-          aria-label="Rename playlist"
-          onClick={() => onOpenRename(id, title)}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-accent"
-        >
-          <FiEdit2 className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          aria-label="Delete playlist"
-          onClick={() => setConfirmOpen(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-negative"
-        >
-          <FiTrash2 className="h-5 w-5" />
-        </button>
+        <Tooltip content="Add songs">
+          <Link
+            href="/search"
+            aria-label="Add songs"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-accent"
+          >
+            <FiPlus className="h-5 w-5" />
+          </Link>
+        </Tooltip>
+        <Tooltip content="Rename playlist">
+          <button
+            type="button"
+            aria-label="Rename playlist"
+            onClick={() => onOpenRename(id, title)}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-accent"
+          >
+            <FiEdit2 className="h-5 w-5" />
+          </button>
+        </Tooltip>
+        <Tooltip content="Delete playlist">
+          <button
+            type="button"
+            aria-label="Delete playlist"
+            onClick={() => setConfirmOpen(true)}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text transition hover:scale-105 hover:text-negative"
+          >
+            <FiTrash2 className="h-5 w-5" />
+          </button>
+        </Tooltip>
       </div>
 
       <Modal

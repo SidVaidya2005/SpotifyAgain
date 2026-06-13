@@ -2,6 +2,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import { FiX } from 'react-icons/fi'
+import { Tooltip } from '@/components/Tooltip'
 
 // Reusable Radix Dialog shell (library-docs.md → Radix UI). All app modals
 // (Auth now; Upload/Playlist later) wrap this and drive open/onOpenChange from
@@ -26,12 +27,14 @@ export function Modal({ open, onOpenChange, title, description, children }: Moda
             {description}
           </Dialog.Description>
           <div className="mt-6">{children}</div>
-          <Dialog.Close
-            aria-label="Close"
-            className="absolute right-4 top-4 text-muted transition hover:text-text focus:outline-none"
-          >
-            <FiX className="h-5 w-5" />
-          </Dialog.Close>
+          <Tooltip content="Close">
+            <Dialog.Close
+              aria-label="Close"
+              className="absolute right-4 top-4 text-muted transition hover:text-text focus:outline-none"
+            >
+              <FiX className="h-5 w-5" />
+            </Dialog.Close>
+          </Tooltip>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

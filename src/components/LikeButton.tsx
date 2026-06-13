@@ -6,6 +6,7 @@ import { useLikedSongs } from '@/hooks/useLikedSongs'
 import { useToggleLike } from '@/hooks/useToggleLike'
 import { useAuthModal } from '@/stores/use-auth-modal'
 import { cn } from '@/lib/utils'
+import { Tooltip } from '@/components/Tooltip'
 
 interface LikeButtonProps {
   songId: string
@@ -38,24 +39,28 @@ export function LikeButton({ songId, className, revealOnHover }: LikeButtonProps
     mutate()
   }
 
+  const label = isLiked ? 'Remove from your likes' : 'Add to your likes'
+
   return (
-    <button
-      onClick={handleClick}
-      aria-label={isLiked ? 'Remove from your likes' : 'Add to your likes'}
-      aria-pressed={isLiked}
-      className={cn(
-        'flex h-11 w-11 items-center justify-center transition hover:scale-105',
-        // Hover-reveal on cards, but always show a heart that's already liked.
-        revealOnHover && !isLiked && 'opacity-0 focus:opacity-100 group-hover:opacity-100',
-        className,
-      )}
-    >
-      <FiHeart
+    <Tooltip content={label}>
+      <button
+        onClick={handleClick}
+        aria-label={label}
+        aria-pressed={isLiked}
         className={cn(
-          'h-5 w-5 transition',
-          isLiked ? 'fill-accent text-accent' : 'fill-none text-muted hover:text-text',
+          'flex h-11 w-11 items-center justify-center transition hover:scale-105',
+          // Hover-reveal on cards, but always show a heart that's already liked.
+          revealOnHover && !isLiked && 'opacity-0 focus:opacity-100 group-hover:opacity-100',
+          className,
         )}
-      />
-    </button>
+      >
+        <FiHeart
+          className={cn(
+            'h-5 w-5 transition',
+            isLiked ? 'fill-accent text-accent' : 'fill-none text-muted hover:text-text',
+          )}
+        />
+      </button>
+    </Tooltip>
   )
 }

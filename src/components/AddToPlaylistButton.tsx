@@ -5,6 +5,7 @@ import { useUser } from '@/hooks/useUser'
 import { useAddToPlaylistModal } from '@/stores/use-add-to-playlist-modal'
 import { useAuthModal } from '@/stores/use-auth-modal'
 import { cn } from '@/lib/utils'
+import { Tooltip } from '@/components/Tooltip'
 
 interface AddToPlaylistButtonProps {
   songId: string
@@ -33,17 +34,19 @@ export function AddToPlaylistButton({ songId, className, revealOnHover }: AddToP
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      aria-label="Add to playlist"
-      className={cn(
-        'flex h-11 w-11 items-center justify-center text-muted transition hover:scale-105 hover:text-text',
-        revealOnHover && 'opacity-0 focus:opacity-100 group-hover:opacity-100',
-        className,
-      )}
-    >
-      <MdPlaylistAdd className="h-5 w-5" />
-    </button>
+    <Tooltip content="Add to playlist">
+      <button
+        type="button"
+        onClick={handleClick}
+        aria-label="Add to playlist"
+        className={cn(
+          'flex h-11 w-11 items-center justify-center text-muted transition hover:scale-105 hover:text-text',
+          revealOnHover && 'opacity-0 focus:opacity-100 group-hover:opacity-100',
+          className,
+        )}
+      >
+        <MdPlaylistAdd className="h-5 w-5" />
+      </button>
+    </Tooltip>
   )
 }

@@ -1,83 +1,102 @@
-# Memory — Feature 16 Deploy to Render (PROJECT COMPLETE)
+# Memory — Post-v1 Enhancements (ALL 5 built; #1–#4 verified, #5 live-verify pending)
 
-Last updated: 2026-06-12
+Last updated: 2026-06-13
 
 ## What was built
 
-**Feature 16 (Phase 8, Deploy to Render) — DONE + LIVE + user-verified ("everything
-working fine"). This completes the entire build plan: 16/16 features.** The app is
-live at **https://spotifyagain.onrender.com** (Render Node Web Service, free plan).
+v1 (16/16) was complete + live before this. This is the **post-v1 enhancement backlog** on
+branch **`post-v1-enhancements`** (off `main`; **nothing committed yet** — owner controls
+commits). **All 5 areas now built.** #1–#4 owner-verified; **#5 still needs a live check.**
 
-Committed + pushed to `origin/main`:
-- `26f097e 6.16-deploy-to-render` — in-repo deploy artifacts:
-  - `.nvmrc` = `22` and `package.json` `engines.node >=20.9.0` (pin Render's Node;
-    local is Node 26).
-  - `render.yaml` blueprint (runtime node, branch main, build `npm install && npm run
-    build`, start `npm run start`, the 3 `NEXT_PUBLIC_*` envVars as `sync:false` so
-    values stay in the dashboard). Free plan note: cold-start ~50s after idle.
-- `5c9f23e fix(auth): redirect OAuth callback to NEXT_PUBLIC_SITE_URL` — the prod OAuth fix
-  (see Problems solved). Touched `src/app/auth/callback/route.ts` + `context/code-standards.md`.
-
-**UNCOMMITTED (user declined the auto-commit):** `context/progress-tracker.md` (Feature 16
-ticked complete + decisions appended) and this `memory.md`. I tried to commit them as
-`docs: mark Feature 16 complete …` and the user **rejected** the commit — so the docs are
-staged-but-not-committed in the working tree. Next session: ask how they want these handled
-(commit themselves / different message / leave as-is) rather than auto-committing. NO co-author
-on any commit (global CLAUDE.md rule).
+- **#1 Portfolio links (DONE, verified):** `PORTFOLIO_LINKS` in `src/lib/constants.ts`;
+  `src/components/PortfolioLinks.tsx` (NEW, `variant: 'full'|'compact'`); sidebar footer
+  (+`pb-24` clearance fix) + mobile `md:hidden` footer in `layout.tsx`.
+- **#2 Search default (DONE, verified):** `src/app/(site)/search/page.tsx` — empty query →
+  "Recently added" `<SongGrid>` from `(await getSongs()).slice(0,12)`.
+- **#3 Tooltips (DONE, verified):** dep `@radix-ui/react-tooltip` (`^1.2.9`) + approved-deps;
+  `src/components/Tooltip.tsx` (reusable, `Trigger asChild`); `src/providers/TooltipProvider.tsx`
+  (root, in `layout.tsx`); wrapped icon-only controls in 8 files.
+- **#5 Play bar (BUILT — lint+tsc clean; NOT live-verified):**
+  `src/stores/use-player.ts` (+`isShuffled`/`originalOrder`, `toggleShuffle`,
+  `addToQueueAfterActive`; `setIds` reshuffles when shuffle on; pure `shuffle`/`insertAfterActive`);
+  `src/hooks/useMoreLikeThis.ts` (NEW, browser-client same-author enqueue + toast);
+  `src/components/player/PlayerContent.tsx` (Shuffle `FiShuffle` leftmost transport, accent when
+  on; More-like-this `FiRadio` left cluster `hidden sm:flex`; both in `<Tooltip>`).
+- **#4 UI modernization (DONE, owner-verified — "everything looks fine"):**
+  - **Step A:** added **§10 "Modernization v2"** to `context/DESIGN-spotify.md` (sticky header,
+    search dropdown, card hover-lift, section rhythm, top gradient; all existing tokens).
+  - `src/lib/search.ts` (NEW) — `sanitizeSearchQuery`, reused by `src/server/search-songs.ts`.
+  - `src/hooks/useSearchSongs.ts` (NEW) — browser-client live search (RLS-scoped, limit 6).
+  - `src/components/HeaderSearch.tsx` (NEW) — pill input + live dropdown (click result → play
+    via `useOnPlay`; Enter / "Show all" → `/search?q=`; outside-click/Escape closes; `useDebounce`).
+  - `src/components/Header.tsx` — restyled sticky (`bg-base/80` + `backdrop-blur` + seam),
+    **logo moved into header (left, all sizes)**, mounts `HeaderSearch`.
+  - `src/components/Sidebar.tsx` — **wordmark removed** (nav kept, +`pt-6`).
+  - `src/components/SongItem.tsx` — card hover-lift (`-translate-y-1` + `shadow-card` + `bg-card-2`).
+  - `src/app/globals.css` — `@utility top-fade`; `src/app/layout.tsx` — gradient `<div>` (`-z-10`)
+    behind top of `<main>` (main now `relative`).
+- **`changes to implement.md`** — all 5 sections marked (#1–#4 ✅ done, #5 ✅ built/⏳ verify),
+  §0 table + build order current, closing "open follow-ups" note.
+- **`ui-registry.md`** — has `PortfolioLinks` + the `pb-24` clearance rule only. **Tooltip,
+  player (#5), and #4 header/card/dropdown NOT yet imprinted** (follow-up).
 
 ## Decisions made
 
-- **Reused the existing Supabase project `vgsiwqrovctitxkruwpj` for prod (USER-CHOSEN).**
-  → no migration re-run, no bucket recreation, no Google Cloud OAuth change, and
-  `next.config.ts` image host already matched. Only Supabase Auth URL config needed the
-  Render origin added.
-- **`NEXT_PUBLIC_SITE_URL` is build-time inlined** (read only in `AuthModal.tsx`). On Render it
-  must be set to `https://spotifyagain.onrender.com` (NO trailing slash) AND the service
-  rebuilt — a restart won't re-bake a `NEXT_PUBLIC_*` var.
-- Skipped `/architect` for deploy (mostly external dashboard work); committed deploy artifacts
-  directly to `main` (matching prior features). **But the user prefers to control the docs/
-  completion commit themselves — don't auto-commit docs without asking.**
+- **#4 direction = "add depth & separation"** (owner): elevated card hover-lift, top gradient,
+  section rhythm, styled sticky header. Dark + functional-green only; **§10 of DESIGN-spotify.md
+  is now the authority** for these (the only sanctioned design-doc change).
+- **#4 header (owner note):** nav links **stay in the sidebar**; **only the logo moves to the
+  header**. Header already structurally pinned (sits above `<main>`'s scroll) → "sticky" was
+  visual styling, not a layout rewrite.
+- **#4 search = inline live dropdown** (owner, not route-only). Client uses browser-client
+  `useSearchSongs` (server reads can't import into client); shared `sanitizeSearchQuery` keeps
+  one source of truth; `/search` page kept for shareable URLs + #2 default.
+- **#5 shuffle = persistent global toggle** (reshuffle-on-new-list in `setIds`); "more like this"
+  = enqueue-after-current same-author (browser-client hook), no auth gate.
+- Earlier: #1 sidebar+mobile-content footer; #2 reuse `getSongs()`; #3 Radix dep + broad scope.
 
 ## Problems solved
 
-- **PROD-ONLY OAuth redirect bug (the big one).** Sign-in completed but redirected to
-  `https://localhost:10000`. **Root cause:** the callback used `new URL(request.url).origin`;
-  behind Render's reverse proxy `request.url` carries the INTERNAL bind host (`localhost:10000`
-  = Render's default `PORT`), so the post-exchange redirect went there. Auth itself never failed
-  — the client's `redirectTo` was always correctly baked to the onrender origin; only the final
-  hop used the wrong origin. **Fix:** `const base = process.env.NEXT_PUBLIC_SITE_URL ?? origin`,
-  applied to all 3 redirects in `src/app/auth/callback/route.ts`. Documented the gotcha in
-  `code-standards.md` (callback snippet + a "never redirect to `request.url` origin in a proxied
-  deploy" rule). Server-side change → just needs redeploy, NOT a NEXT_PUBLIC rebuild.
-- **Verifying the SITE_URL bake headlessly:** grepped the served `/_next/static/chunks/*.js` for
-  `spotifyagain.onrender.com` — confirmed it was inlined (so OAuth `redirectTo` was correct).
+- **`pb-24` clearance bug (#1):** sidebar footer hid behind the `fixed h-24` player bar — added
+  `pb-24` to the aside (rule in `ui-registry.md`).
+- **#4 gradient stacking:** an `absolute` top-of-content gradient renders ABOVE static siblings;
+  fixed by `-z-10` (with `main` `relative`) so content sits on top.
+- **Tailwind v4 gradient ambiguity:** used a token-based `@utility top-fade` (linear-gradient
+  `var(--color-surface)`→transparent) instead of `bg-gradient`/`bg-linear` class naming.
+- **Portfolio URLs:** GitHub repo PRIVATE → 404 for visitors; LinkedIn unverifiable (HTTP 999).
 
 ## Current state
 
-- **Live + fully working at https://spotifyagain.onrender.com.** User confirmed anon browse/play,
-  Google sign-in (post-fix), upload, like, playlist create/add/reorder/play, and responsive all work.
-- Headless prod checks (curl) green: `/` 200 (renders the public song → prod env vars + server read OK),
-  `/search` 200 (public), `/library` `/liked` `/playlist/[id]` → 307 → `/` (proxy gating live).
-- `main` is at `5c9f23e` (pushed). Working tree has the **uncommitted** progress-tracker + memory
-  updates (the user declined committing them).
-- Supabase MCP available (project `vgsiwqrovctitxkruwpj`). Context7 available.
+- Branch **`post-v1-enhancements`**, all 5 built. `npm run lint` + `npx tsc --noEmit` clean
+  throughout; headless smoke checks green (`/`, `/search` 200 w/ new header+gradient; `/library`
+  307-gates). #1–#4 owner-verified live; **#5 NOT yet live-verified**.
+- **Dev server running** (Bash task **`bbby0fach`**, localhost:3000 — the user restarted it;
+  prior `bf22jsc01` is stale). No new dep since #3, so hot-reload works. Avoid `npm run build`
+  while dev is up (`.next` contention) — use lint + `tsc --noEmit` + curl.
+- **Large uncommitted working tree** on the branch (untracked: `changes to implement.md`,
+  `ui-registry.md`, `memory.md`, `PortfolioLinks.tsx`, `Tooltip.tsx`, `TooltipProvider.tsx`,
+  `useMoreLikeThis.ts`, `HeaderSearch.tsx`, `useSearchSongs.ts`, `lib/search.ts`; modified
+  `constants.ts`, `Sidebar.tsx`, `layout.tsx`, `search/page.tsx`, `code-standards.md`,
+  `DESIGN-spotify.md`, `globals.css`, `package.json`+lock, `Header.tsx`, `LikeButton.tsx`,
+  `AddToPlaylistButton.tsx`, `PlaylistList.tsx`, `Modal.tsx`, `PlayerContent.tsx`,
+  `PlaylistHeaderActions.tsx`, `SongItem.tsx`, `server/search-songs.ts`, `stores/use-player.ts`).
 
 ## Next session starts with
 
-1. **Ask the user how to handle the uncommitted docs** (`context/progress-tracker.md` + `memory.md`) —
-   they declined an auto-commit this session. Don't commit without their go-ahead.
-2. **The build plan is DONE (16/16).** Anything further is out-of-scope of `build-plan.md`. Candidate
-   polish if asked:
-   - **Seed 3–6 public demo songs** (catalog has only **1** public song — thin for a recruiter's first
-     impression). Must be uploaded via the app's upload flow (audio+cover → Storage); NOT MCP-seedable.
-   - Optional: bump Render free → Starter to kill the ~50s cold start.
-   - Optional: a README polish / project write-up for the portfolio.
+The build work is essentially **done**. Remaining, in priority order:
+1. **Live-verify #5** (shuffle: toggle→accent, random next, persist/reshuffle, off restores;
+   more-like-this: enqueue-after + toast / "No other songs by X."; tooltips). Seed 2–3 same-author
+   demo songs to demo it. Then flip #5 to fully verified in `changes to implement.md`.
+2. **`/imprint`** the new components (Tooltip, player shuffle/more-like-this, Header, SongItem
+   hover-lift, HeaderSearch dropdown) into `ui-registry.md`.
+3. **Update `progress-tracker.md`** to note the post-v1 enhancements.
+4. **Commit the branch** (owner decision; NO co-author line per global rule) and consider a PR
+   into `main` (which redeploys Render).
 
 ## Open questions
 
-- **How does the user want the completion docs committed?** (declined the auto-commit — pending.)
-- Still untested (needs a 2nd real auth user, not single-account testable): cross-user negative RLS
-  paths — visibility-gated INSERTs on `liked_songs`/`playlist_songs`, reorder/remove on a non-owned
-  playlist, cross-user `/playlist/[id]` + search visibility. All validated structurally in Feature 06.
-- Accepted deviation still stands (Feature 08): a signed-in user sees their own private songs on Home
-  and in their own `/search` results (same RLS) — correct/expected, not a leak to other users.
+- **Live-verify #5** (only unverified feature).
+- **GitHub repo still PRIVATE** — make public or the #1 portfolio link 404s for recruiters.
+- LinkedIn URL unverified (format valid) — owner eyeball.
+- Commit strategy / when to merge to `main` (owner controls).
+- `/imprint audit` to baseline the pre-registry v1 UI? (offered, not done.)

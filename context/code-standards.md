@@ -334,6 +334,7 @@ Approved dependencies for this project:
 - `zustand` — client UI/player state.
 - `use-sound` — audio playback.
 - `@radix-ui/react-dialog`, `@radix-ui/react-slider` — modal + slider primitives.
+- `@radix-ui/react-tooltip` — accessible hover/focus tooltips for icon-only controls (matches the Dialog/Slider Radix usage).
 - `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/modifiers`, `@dnd-kit/utilities` — accessible drag-and-drop for reordering playlist tracks (pointer + touch + keyboard sensors; satisfies the mobile-first requirement).
 - `react-hook-form` — forms.
 - `react-icons` — icons.
