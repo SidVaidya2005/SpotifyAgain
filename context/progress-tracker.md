@@ -10,9 +10,9 @@
 
 ## Current Status
 
-**Phase:** v1 **COMPLETE (16/16)**, live + LIVE-VERIFIED 2026-06-12 ("everything working fine") at **https://spotifyagain.onrender.com**. **Phase 9 — Post-v1 Enhancements: all 5 built** on branch `post-v1-enhancements` (committed `V1: 1…5`); **#20 (play bar) awaits a live check**, #17–19 + #21 owner-verified.
+**Phase:** v1 **COMPLETE (16/16)**, live + LIVE-VERIFIED 2026-06-12 ("everything working fine") at **https://spotifyagain.onrender.com**. **Phase 9 — Post-v1 Enhancements: all 5 built**, committed (`V1: 1…5` + the context update) and **merged into `main`** — the `post-v1-enhancements` branch was deleted, so the repo is now single-branch. **#20 (play bar) awaits a live check**; #17–19 + #21 owner-verified.
 **Last completed:** 21 UI modernization v2 — sticky translucent header (logo moved in, nav stays in sidebar), inline live-search dropdown, `SongItem` hover-lift, top gradient; design system evolved first via `DESIGN-spotify.md` §10. Owner-verified ("everything looks fine").
-**Next:** Live-verify 20 (play bar — shuffle + "more like this"; seed ≥2 same-author demo songs to exercise it). Then: make the GitHub repo **public** (the #17 portfolio link 404s until then), `/imprint` the new components into `ui-registry.md`. The live deploy stays at v1 until the branch is merged to `main`.
+**Next:** Live-verify 20 (play bar — shuffle + "more like this"; seed ≥2 same-author demo songs to exercise it), then `/imprint` the new components into `ui-registry.md`. The GitHub repo is **public** (verified 2026-06-13), so the #17 portfolio link resolves; `main` is merged + pushed and Render redeploys from it.
 
 ---
 
@@ -50,7 +50,7 @@
 ### Phase 8 — Deployment
 - [x] 16 Deploy to Render
 
-### Phase 9 — Post-v1 Enhancements (branch `post-v1-enhancements`)
+### Phase 9 — Post-v1 Enhancements (merged into `main`)
 - [x] 17 Portfolio links integration (area #1)
 - [x] 18 Search default content (area #2)
 - [x] 19 Tooltips for discoverability (area #3)
@@ -123,8 +123,8 @@ The non-obvious things worth carrying forward — distilled from the per-feature
   newly-launched list happens inside `setIds` (not `useOnPlay`), so every play entry point inherits it.
 - **`DESIGN-spotify.md` §10 is authoritative** for the modernized header / search dropdown / card
   hover-lift / section rhythm / top gradient — the only sanctioned post-v1 design-doc change (21).
-- **GitHub repo is still PRIVATE** → the #17 portfolio link 404s for logged-out recruiters until made
-  public (17). LinkedIn URL format-valid but not bot-verifiable.
+- **GitHub repo is PUBLIC** (verified 2026-06-13, `isPrivate:false`) → the #17 portfolio link resolves
+  for logged-out recruiters (17). LinkedIn URL format-valid but not bot-verifiable.
 
 ---
 

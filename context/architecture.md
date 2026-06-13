@@ -33,7 +33,7 @@
 ## Folder Structure
 
 > **Status — built and live.** The v1 app (16/16) plus the Phase 9 post-v1 enhancements are
-> built; the tree below reflects what is actually on disk (branch `post-v1-enhancements`). The
+> built; the tree below reflects what is actually on disk (branch `main`). The
 > live deploy tracks `main`; build/branch state is in `progress-tracker.md`.
 
 ```

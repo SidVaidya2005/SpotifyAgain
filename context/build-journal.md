@@ -529,8 +529,9 @@
 - **17 — pb-24 clearance bug (fixed).** At `≥ md` the sidebar footer rendered BEHIND the `fixed h-24`
   player bar — the `<aside>` had no bottom clearance (the `<main>` already used `md:pb-24`). Fix: add
   `pb-24` to the sidebar `<aside>`. Recorded as a durable app-shell clearance rule in `ui-registry.md`.
-- **17 — GitHub repo still PRIVATE** → that link 404s for logged-out visitors until made public.
-  LinkedIn URL format-valid but not bot-verifiable (HTTP 999). Email + personal site verified.
+- **17 — GitHub repo made PUBLIC** (verified 2026-06-13, `isPrivate:false`) → the link resolves for
+  logged-out visitors. LinkedIn URL format-valid but not bot-verifiable (HTTP 999). Email + personal
+  site verified.
 - **18 (area #2) — Search default = recently-added (USER-CHOSEN over a public-only variant).** When
   `query===''`, `src/app/(site)/search/page.tsx` fetches `(await getSongs()).slice(0,12)` (the 12 newest;
   RLS-scoped — public to all + the signed-in viewer's own) and renders a "Recently added" heading + the
@@ -587,5 +588,6 @@
   fine").** All five areas built; #20 awaits the live check above.
 - **Follow-ups (post-v1).** `/imprint` the new components (Tooltip, player shuffle / more-like-this,
   Header, `SongItem` hover-lift, `HeaderSearch` dropdown) into `ui-registry.md` (only `PortfolioLinks` +
-  the `pb-24` rule recorded so far); make the GitHub repo public; update `progress-tracker.md` (done);
-  the branch is committed (`V1: 1…5`) but not yet merged to `main` (merge redeploys Render — owner decision).
+  the `pb-24` rule recorded so far) — still open, as is the #20 live check. **Resolved 2026-06-13:**
+  GitHub repo made public; `progress-tracker.md` updated; `post-v1-enhancements` merged into `main`
+  (`V1: 1…5` + the context update) and the branch deleted (single-branch repo); Render redeploys from `main`.

@@ -224,7 +224,7 @@ Ship the app live for the portfolio audience.
 > scope layered on the live app to raise it to portfolio quality — all `architecture.md`
 > invariants and RLS still apply; the only sanctioned design-doc change is
 > `DESIGN-spotify.md` §10 (feature 21). Features are listed in **build/commit order** (the
-> `V1: 1…5` commits on branch `post-v1-enhancements`); the trailing `(#n)` is the owner's
+> `V1: 1…5` commits, now merged into `main`); the trailing `(#n)` is the owner's
 > enhancement-area number. **All five are built; #20 (play bar) awaits a live check.** Full
 > per-feature detail is in `build-journal.md`.
 
