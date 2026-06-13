@@ -20,7 +20,7 @@
 | --- | ------ | ------ |
 | 1+5 | Fixed app-shell + full-width header | ✅ **done — user-verified live** |
 | 2 | Personal nav items prompt sign-in (anon) | ✅ **done — user-verified live** |
-| 3 | Remove duplicate search bar on `/search` | ⬜ pending |
+| 3 | Remove duplicate search bar on `/search` | ✅ **done — user-verified live** |
 | 4 | Stronger hover feedback (green glow) | ⬜ pending |
 
 Legend: ✅ done · 🔨 in progress / next · ⬜ pending.
@@ -77,7 +77,7 @@ live** (2026-06-13).
 
 ---
 
-## 3 — Remove the duplicate search bar on `/search`  ⬜ PENDING
+## 3 — Remove the duplicate search bar on `/search`  ✅ DONE (user-verified)
 
 **Problem (screenshot-confirmed):** the global **header search** and the `/search` page's own
 `SearchInput` are identical and stack on top of each other on `/search`.
@@ -85,12 +85,19 @@ live** (2026-06-13).
 **Decision (A):** drop the page's `SearchInput`; the **header search drives `/search`** (already routes
 to `/search?q=`). The page keeps its `Search` heading + recently-added/results body, reading `?q=`.
 
-**How (planned):**
-- `search/page.tsx`: remove the `<SearchInput>` render + its import; keep the heading and the
-  `query ? results : recently-added` body unchanged.
-- `SearchInput.tsx` likely becomes unused → check for other importers, then delete it.
+**Accepted tradeoff:** the page grid no longer updates per-keystroke (the page input used a debounced
+`router.replace`). It now updates only when a query is **committed** from the header (Enter / "Show all
+results"). The header's live dropdown (DESIGN §10.2) covers live-as-you-type; the full-page grid is the
+"show all" destination — matches §10.2's intent, so we don't re-wire live typing into the page.
 
-**Touches:** `search/page.tsx`, `SearchInput.tsx` (likely deleted).
+**How (implemented):**
+- `search/page.tsx`: removed the `<SearchInput>` render + import; dropped the now single-child
+  `space-y-4` wrapper so `<h1>Search</h1>` sits directly in the page's `space-y-8` stack. The
+  `?q=` read, `searchSongs`, recently-added default, and both `SongGrid` branches are unchanged.
+- `SearchInput.tsx`: **deleted** — confirmed it was imported only by `search/page.tsx` (now dead).
+  `useDebounce` stays (still used by `HeaderSearch`).
+
+**Touches:** `search/page.tsx`, `SearchInput.tsx` (deleted).
 
 ---
 
@@ -116,5 +123,5 @@ to `/search?q=`). The page keeps its `Search` heading + recently-added/results b
 
 1. ✅ **#1+#5 fixed shell** — done (user-verified).
 2. ✅ **#2 anon sign-in prompt** — done (user-verified).
-3. ⬜ **#3 search dedupe.**
+3. ✅ **#3 search dedupe** — done (user-verified).
 4. ⬜ **#4 hover green glow.**
