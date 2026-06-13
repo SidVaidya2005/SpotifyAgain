@@ -154,10 +154,16 @@ The non-obvious things worth carrying forward — distilled from the per-feature
 
 ## Out-of-scope polish (if asked)
 
-- **Seed 3–6 public demo songs (incl. some same-author)** — catalog has only **1** public song (thin
-  first impression); same-author songs are also needed to demo #20 (shuffle needs ≥2 queued; "more like
-  this" needs ≥2 by one author). Must go through the app's upload flow (audio + cover → Storage); not
-  MCP-seedable.
+- **Seed demo songs — ✅ DONE (2026-06-13).** Catalog went from **1 public song → 19** (20 total; the
+  20th is a pre-existing private song). Ran `npm run seed:songs` (`scripts/seed-songs.mjs`): uploaded the
+  18 bundled royalty-free demo clips from local `Songs/public/*` (gitignored) to Storage + inserted
+  `is_public` rows as the owner via the **service-role key** (architecture-sanctioned local seed task;
+  needs `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`). Resolves the owner by `SEED_USER_EMAIL`, idempotent
+  on `(title, author)`. Relabeled 3 neon tracks → **"Night Runners"** (3-track cluster) so **#20 is now
+  demoable**. The 3 top-level `Songs/*.mp3` were **copyrighted Bollywood tracks — excluded from the seed.**
+  **The local `Songs/` asset folder was deleted after seeding** (was gitignored), so `scripts/seed-songs.mjs`
+  can't be re-run until the 18 tutorial clips + covers are re-fetched into `Songs/public/{songs,cover-images}/`.
+  Not needed unless re-seeding a fresh Supabase project.
 - **`/imprint` the post-v1 + v2 components** into `ui-registry.md` — Tooltip, player shuffle /
   more-like-this, Header, `SongItem` hover-lift, `HeaderSearch` dropdown (Phase 9); the fixed app-shell
   (header/sidebar/main offsets), the green hover/focus glow (`--shadow-glow` / `--shadow-card-glow`), and

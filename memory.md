@@ -1,68 +1,75 @@
-# Memory — v2 UI changes: #3 search dedupe done, #4 next
+# Memory — Demo catalog seeded (1 → 19 public songs)
 
 Last updated: 2026-06-13
 
 ## What was built / done this session
 
-- **v2 #3 — Remove the duplicate search bar on `/search` — ✅ DONE (user-verified live).**
-  - `src/app/(site)/search/page.tsx`: removed the `SearchInput` import + `<SearchInput>` render;
-    dropped the now single-child `space-y-4` wrapper so `<h1>Search</h1>` sits directly in the page's
-    `space-y-8` stack; updated the source-of-truth comment to point at `HeaderSearch`. The `?q=` read,
-    `searchSongs`, `getSongs().slice(0,12)` recently-added default, and both `SongGrid` branches are
-    unchanged.
-  - `src/components/SearchInput.tsx`: **DELETED** — it was imported only by `search/page.tsx`
-    (grep-confirmed), so it was dead after the page edit. `useDebounce` stays (still used by
-    `HeaderSearch`).
-  - `v2-changes.md` #3 flipped to ✅ (table + section + build order).
-  - `npx tsc --noEmit` + `npm run lint` both clean.
-- Planned via `/architect` → plan file `~/.claude/plans/3-remove-the-gleaming-puffin.md` (approved).
+- **Seeded the demo catalog — DONE & verified.** Catalog went from **1 public song → 19** (20 total;
+  the 20th is a pre-existing private song). All 18 royalty-free demo clips uploaded to Supabase Storage
+  + inserted as public `songs` rows owned by the owner account.
+- **New file `scripts/seed-songs.mjs`** — one-time local seeder (`.mjs`, not `.ts`, because the project
+  has NO TS runner and we won't add one for a local admin task; run with Node's native `--env-file`).
+  - Resolves the uploader's `user_id` from email via `supabase.auth.admin.listUsers()`
+    (`SEED_USER_EMAIL`, defaults to `siddarthvaidya2005@gmail.com`).
+  - For each of 18 clips: uploads MP3 → `songs` bucket + cover → `images` bucket under
+    `<user_id>/<uuid>.<ext>`, then inserts a `songs` row `is_public: true`.
+  - **Idempotent** on `(title, author)` — re-runs skip existing. Mirrors the app's upload-cleanup
+    invariant (removes orphaned Storage objects on a mid-way failure). Uses the **service-role key**
+    (bypasses RLS) — architecture-sanctioned local seed task.
+- **`package.json`** — added script `"seed:songs": "node --env-file=.env.local scripts/seed-songs.mjs"`.
+- **`.gitignore`** — added `/Songs` (the local asset folder). Was NOT ignored before → the 20MB of
+  assets + 3 copyrighted tracks were about to be committed to the PUBLIC repo. Now safe.
+- **`.env.example`** — documented `SUPABASE_SERVICE_ROLE_KEY` (now needed for the seeder) + optional
+  `SEED_USER_EMAIL`.
+- **`context/progress-tracker.md`** — flipped the seeding bullet to ✅ DONE with the details.
 
 ## Decisions made
 
-- **v2 #3 (decision A, agreed):** the global **header search** (`HeaderSearch`, in the app shell on
-  every page) is the single search entry point and drives `/search?q=`. The `/search` page keeps its
-  heading + recently-added/results body and reads `?q=` (URL is source of truth).
-- **Accepted tradeoff:** the `/search` grid no longer updates per-keystroke (the deleted page input
-  used a debounced `router.replace`). It now updates only when a query is **committed** from the header
-  (Enter / "Show all results"). The header live dropdown (DESIGN §10.2) covers live-as-you-type; the
-  full page is the "show all" destination — matches §10.2, so don't re-wire live typing into the page.
-- Remaining v2 build order: **#4 only.**
-- **Workflow (standing):** `v2-changes.md` is the live tracker — write each item's approach + status
-  there *before* coding; flip to ✅ only after user-verifies live.
+- **Did NOT use an external music API** (Spotify/Audius/Jamendo). Reasoning: storage is NOT the
+  constraint (18 clips ≈ 20MB ≈ 0.4% of the shared 5GB free tier); and replacing the catalog with an API
+  would gut the portfolio's whole point (uploads + Storage + RLS ownership are what it demonstrates).
+  Spotify/Apple/YouTube also can't do anonymous full playback anyway (previews-only / subscriber-gated /
+  ToS). If a "big library" is ever wanted, do it as an OPTIONAL hybrid import feature ON TOP of uploads
+  (its own future Phase 11), not a replacement.
+- **Author relabel for #20:** the source data (`Songs/seeds/songs.js`) gives every track a unique
+  artist, so same-author queueing would surface nothing. Relabeled 3 neon-themed tracks (Neon Lights,
+  Neon Dreams, Neon Tokyo) → **"Night Runners"** to create one 3-track author cluster. Verified in DB:
+  Night Runners = 3.
+- **The 3 top-level `Songs/*.mp3` (Bollywood: Shararat-Dhurandhar, Aari Aari, Bairan-Banjaare) are
+  copyrighted — EXCLUDED from the seed; never deploy publicly.** Only the 18 tutorial clips were seeded.
+- Workflow standing rule still in force: update the plan/progress doc before/after coding (done).
 
 ## Problems solved
 
-- None tricky this session — the change was small and the header/page wiring was already URL-driven
-  (`?q=`), so removing the page input was clean. Verified no orphaned imports (`useDebounce` still used).
+- **`Songs/` was not gitignored** — caught before any commit; added `/Songs` to `.gitignore`. Confirmed
+  via `git check-ignore`.
+- **No TS runner** in the project → wrote the seeder as `.mjs` + `--env-file=.env.local` (Node 26) so no
+  new dependency was needed.
+- User had to add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local` (was absent); script fails fast with a
+  clear message if it's missing. Key is now added.
 
 ## Current state
 
-- On `main`. **Commits since last memory:** `b8964cf` (#1+#5 fixed shell) and `10d207d` (#2 anon
-  sign-in prompt) were committed (so those are no longer uncommitted). **#3's changes are NOT yet
-  committed** — working tree has uncommitted edits to `search/page.tsx`, the `SearchInput.tsx`
-  deletion, and `v2-changes.md`. Owner controls commits.
-- **Dev server is RUNNING in the background** (shell ID `b108l4a1e`, output at
-  `/tmp/claude-501/.../tasks/b108l4a1e.output`). User started it manually and verified #3 live.
-  → **Avoid `npm run build` while it's up** (`.next` contention) — use `tsc --noEmit` + lint.
+- **Seeder ran successfully: created 18, skipped 0, failed 0.** DB verified via Supabase MCP
+  (project ref `vgsiwqrovctitxkruwpj`): 20 total songs, 19 public, 18 distinct authors, Night Runners=3.
+- The live Render site **already shows the 19 songs** (catalog is read at runtime from Supabase — no
+  redeploy needed).
+- **UNCOMMITTED on `main`:** `scripts/seed-songs.mjs` (new), `.gitignore`, `package.json`, `.env.example`,
+  `context/progress-tracker.md`. `.env.local` + `Songs/` are gitignored (key + copyrighted tracks safe).
+  Owner controls commits — not yet committed.
 
 ## Next session starts with
 
-- **v2 #4 — Stronger hover feedback (green glow)** (decision B, last v2 item). Order:
-  1. **`DESIGN-spotify.md` §7 FIRST** — document a subtle green hover/active glow as a *sanctioned
-     functional* cue (hover/active is a functional state, not decoration; green stays functional-only).
-  2. **`globals.css`** — add a green-glow shadow token to `@theme` (e.g. `--shadow-glow`) so it's not a
-     raw inline value.
-  3. Apply on hover to `SongItem` (card) + nav/header action buttons; keep it subtle; confirm it reads
-     as feedback, not decoration; re-tune against the now-final fixed shell.
-  - Doc-first in `v2-changes.md` #4, then code, then user-verify, then flip ✅.
+1. **Live-verify feature #20** (play bar — shuffle + "more like this") against the now-seeded **Night
+   Runners** 3-track cluster: on a Night Runners song, "More like this" should queue the other 2; shuffle
+   should have a real queue. If it works → flip **#20 to ✅** in `progress-tracker.md` + `build-plan.md`
+   (it's the LAST unchecked feature box; everything else is done).
+2. **Commit** the uncommitted seed work (owner's call on timing / branch).
 
-## Open questions / still open from post-v1
+## Open questions
 
-- **When to commit the uncommitted #3 work** (and whether to bundle with #4) — owner decides.
-- **Post-v1 feature 20 (play bar — shuffle + "more like this") still NOT live-verified** — needs ≥2
-  **same-author** demo songs seeded via the app upload flow. (Tracked in `progress-tracker.md`.)
-- **`/imprint` the new components** into `ui-registry.md` (Tooltip, player shuffle/more-like-this,
-  Header, `SongItem` hover-lift, `HeaderSearch` dropdown) — only `PortfolioLinks` + the `pb-24` rule
-  recorded so far.
-- **When all 4 v2 changes are done:** fold `v2-changes.md` into the canonical docs (new **Phase 10** in
-  `build-plan.md`, status in `progress-tracker.md`, detail in `build-journal.md`), then retire it.
+- **When to commit** the seed work, and whether to bundle with the #20 verification flip — owner decides.
+- **`/imprint` the post-v1 + v2 components** into `ui-registry.md` still outstanding (Tooltip, player
+  shuffle/more-like-this, Header, `SongItem` hover-lift, `HeaderSearch` dropdown, fixed app-shell, green
+  glow, anon sign-in-prompt nav) — only `PortfolioLinks` + the `pb-24` rule recorded so far.
+- Optional: bump Render free → Starter to kill the ~50s cold start; README / portfolio write-up.

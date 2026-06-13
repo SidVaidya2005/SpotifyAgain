@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# local seed assets — raw audio/cover files used by scripts/seed-songs.mjs.
+# Never commit: keeps multi-MB media (and any non-redistributable tracks) out of the public repo.
+/Songs
+
 # debug
 npm-debug.log*
 yarn-debug.log*
