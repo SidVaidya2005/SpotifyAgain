@@ -11,8 +11,8 @@
 ## Current Status
 
 **Phase:** v1 **COMPLETE (16/16)**, live + LIVE-VERIFIED 2026-06-12 ("everything working fine") at **https://spotifyagain.onrender.com**. **Phase 9 — Post-v1 Enhancements: all 5 built** (merged into `main`; single-branch repo). **Phase 10 — v2 UI Refinements (22–25): all 4 built and user-verified live** (2026-06-13). **Phase 11 — Sectioned Home (26): built, tsc+lint clean; live-verify pending.** **#20 (play bar) still awaits a live check**; everything else owner/user-verified.
-**Last completed:** 26 Sectioned Home — Home restructured from one flat grid into labeled shelves ("Recently added" + signed-in-only "Made by you" / "Liked songs" + "Browse by artist" author-grouped rows for ≥2-song artists; today "Night Runners" ×3). New `src/server/optional-user.ts` (`getOptionalUser`, no redirect) + pure `src/lib/artists.ts` (`groupSongsByAuthor`); `page.tsx` parallelizes reads. Honest-data-only sections (no "made for you" — out of scope). tsc + lint clean; **not yet live-verified or committed.**
-**Next:** Live-verify **26** (Home sections render: anon sees Recently added + Browse by artist→Night Runners; owner also sees Made by you / Liked songs). Also still pending: live-verify **20** (play bar — exercise against the seeded Night Runners cluster), then `/imprint` the new components (Phase 9–11) into `ui-registry.md`. Uncommitted on `main` (owner decides when to commit; now includes the seed script + Phase 11). The GitHub repo is **public**; Render redeploys from `main`.
+**Last completed:** 26 Sectioned Home — Home restructured from one flat grid into labeled shelves ("Recently added" + signed-in-only "Made by you" / "Liked songs" + "Browse by artist" author-grouped rows for ≥2-song artists; today "Night Runners" ×3). New `src/server/optional-user.ts` (`getOptionalUser`, no redirect) + pure `src/lib/artists.ts` (`groupSongsByAuthor`); `page.tsx` parallelizes reads. Honest-data-only sections (no "made for you" — out of scope). tsc + lint clean; **committed to `main` (`c25256d`); live-verify still pending.**
+**Next:** Live-verify **26** (Home sections render: anon sees Recently added + Browse by artist→Night Runners; owner also sees Made by you / Liked songs). Also still pending: live-verify **20** (play bar — exercise against the seeded Night Runners cluster). Phase 11 + seed work is **committed to `main`** (#26 in `c25256d`, seed script in `9a9a80a`); working tree clean. The GitHub repo is **public**; Render redeploys from `main`.
 
 ---
 
@@ -180,10 +180,6 @@ The non-obvious things worth carrying forward — distilled from the per-feature
   **The local `Songs/` asset folder was deleted after seeding** (was gitignored), so `scripts/seed-songs.mjs`
   can't be re-run until the 18 tutorial clips + covers are re-fetched into `Songs/public/{songs,cover-images}/`.
   Not needed unless re-seeding a fresh Supabase project.
-- **`/imprint` the post-v1 + v2 components** into `ui-registry.md` — Tooltip, player shuffle /
-  more-like-this, Header, `SongItem` hover-lift, `HeaderSearch` dropdown (Phase 9); the fixed app-shell
-  (header/sidebar/main offsets), the green hover/focus glow (`--shadow-glow` / `--shadow-card-glow`), and
-  the anon sign-in-prompt nav pattern (Phase 10). Only `PortfolioLinks` + the `pb-24` rule recorded so far.
 - Bump Render free → Starter to kill the ~50s cold start.
 - README / portfolio write-up.
 

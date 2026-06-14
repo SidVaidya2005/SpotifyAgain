@@ -32,21 +32,22 @@
 
 ## Folder Structure
 
-> **Status — built and live.** The v1 app (16/16) plus the Phase 9 post-v1 enhancements are
-> built; the tree below reflects what is actually on disk (branch `main`). The
-> live deploy tracks `main`; build/branch state is in `progress-tracker.md`.
+> **Status — built and live.** The v1 app (16/16) plus the Phase 9–11 enhancements
+> (post-v1 enhancements, v2 UI refinements, and sectioned Home) are built; the tree below
+> reflects what is actually on disk (branch `main`). The live deploy tracks `main`;
+> build/branch state is in `progress-tracker.md`.
 
 ```
 SpotifyAgain/
 ├── CLAUDE.md                      → agent entry point, redirects here
+├── README.md                      → short project blurb (2-line stub; full write-up still TODO)
 ├── context/                       → this documentation set (source of truth)
 │   ├── project-overview.md · architecture.md · code-standards.md
 │   ├── DESIGN-spotify.md          → UI/visual source of truth (incl. §10 Modernization v2)
 │   ├── library-docs.md · build-plan.md · progress-tracker.md
 │   └── build-journal.md           → verbatim per-feature history (not read at session start)
-├── ui-registry.md                 → imprinted UI patterns (root)
 ├── memory.md                      → latest session handoff (root, /remember)
-├── next.config.ts                 → Supabase Storage image host in images.remotePatterns
+├── next.config.ts                 → images.remotePatterns (Supabase Storage host + Google avatar host); turbopack root
 ├── tsconfig.json                  → "@/*" path alias → src/*
 ├── render.yaml                    → Render blueprint (build/start/env)
 ├── .nvmrc                         → Node 22 (pins Render's Node)
@@ -56,6 +57,8 @@ SpotifyAgain/
 │   └── migrations/                → SQL schema + RLS + storage buckets (source of truth for DB)
 │       ├── 20260611202834_profiles_and_handle_new_user.sql
 │       └── 20260612015610_catalog_schema_and_storage.sql
+├── scripts/
+│   └── seed-songs.mjs             → local demo-catalog seeder (npm run seed:songs; service-role key, gitignored Songs/)
 ├── public/                        → static assets
 └── src/
     ├── proxy.ts                   → Next 16 request entry (was root middleware.ts): refreshes session, guards personal routes
@@ -74,7 +77,7 @@ SpotifyAgain/
     │   ├── modals/                → UploadModal, AuthModal, PlaylistModal, AddToPlaylistModal
     │   ├── library/               → LibraryEmptyState, LibraryUploadButton
     │   ├── playlist/              → PlaylistHeaderActions, PlaylistTrackList, PlaylistTrackRow
-    │   ├── Sidebar.tsx, BottomNav.tsx, Header.tsx, HeaderSearch.tsx, SearchInput.tsx
+    │   ├── Sidebar.tsx, BottomNav.tsx, Header.tsx, HeaderSearch.tsx
     │   ├── SongGrid.tsx, SongItem.tsx (hover-lift), LikeButton.tsx, AddToPlaylistButton.tsx
     │   └── Button.tsx, Modal.tsx, Tooltip.tsx, UserMenu.tsx, VisibilityBadge.tsx, PlaylistList.tsx, PortfolioLinks.tsx
     ├── providers/                 → ReactQueryProvider, ModalProvider, UserProvider, ToasterProvider, TooltipProvider
@@ -83,12 +86,13 @@ SpotifyAgain/
     │                                useSearchSongs, useMoreLikeThis
     ├── stores/                    → use-player, use-upload-modal, use-auth-modal, use-playlist-modal, use-add-to-playlist-modal
     ├── server/                    → get-songs, get-songs-by-user, get-liked-songs, get-playlist,
-    │                                get-playlist-songs, search-songs, require-user (read-only; Server Component use)
+    │                                get-playlist-songs, search-songs, require-user, optional-user (read-only; Server Component use)
     ├── actions/                   → create-song, toggle-like, create-playlist, rename-playlist, delete-playlist,
     │                                add-song-to-playlist, remove-song-from-playlist, reorder-playlist ("use server")
     ├── lib/
     │   ├── constants.ts           → STORAGE_BUCKETS, ACCEPTED_* types, PORTFOLIO_LINKS
     │   ├── search.ts              → sanitizeSearchQuery (shared by server read + client hook)
+    │   ├── artists.ts             → groupSongsByAuthor (pure; sectioned-Home author shelves)
     │   ├── utils.ts               → cn() (clsx + tailwind-merge)
     │   └── supabase/
     │       ├── client.ts          → createClient() for browser/client components
@@ -283,7 +287,7 @@ short-lived signed URLs) is out of scope (see `project-overview.md`).
 - **Build command:** `npm install && npm run build`. **Start command:** `npm run start`. Next.js binds to `process.env.PORT`, which Render injects.
 - Environment variables are set in the Render dashboard (never committed): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` (= the Render URL), and `SUPABASE_SERVICE_ROLE_KEY` only if a server seed/admin task needs it.
 - In **Supabase → Auth**, add the Render URL as the Site URL and to the allowed Redirect URLs. In **Google Cloud OAuth**, the authorized redirect is the Supabase callback URL; the app's `redirectTo` is `${NEXT_PUBLIC_SITE_URL}/auth/callback`.
-- `next.config.ts` `images.remotePatterns` must include the Supabase Storage host so cover art renders via `<Image>`.
+- `next.config.ts` `images.remotePatterns` must include the Supabase Storage host so cover art renders via `<Image>` (it also whitelists `lh3.googleusercontent.com` for Google profile avatars in the account menu).
 - An optional `render.yaml` blueprint at the repo root captures the build/start commands and env var names for reproducible deploys.
 
 ---
@@ -536,6 +540,10 @@ primitives; see `code-standards.md` → Visual Design.
   --shadow-card: 0 8px 8px rgb(0 0 0 / 0.3);
   --shadow-dialog: 0 8px 24px rgb(0 0 0 / 0.5);
   --shadow-inset-border: 0 1px 0 #121212, inset 0 0 0 1px #7c7c7c;
+
+  /* Green hover/focus glow — sanctioned functional feedback (DESIGN §7 exception, feature 25) */
+  --shadow-glow: 0 0 16px 0 rgb(30 215 96 / 0.35);                                  /* halo only (header buttons) */
+  --shadow-card-glow: 0 8px 8px rgb(0 0 0 / 0.3), 0 0 16px 0 rgb(30 215 96 / 0.28); /* card lift + halo */
 
   /* Breakpoints — overrides Tailwind defaults to match the device targets */
   --breakpoint-xs: 425px;   /* large phones                              */
